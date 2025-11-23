@@ -4,6 +4,8 @@
  */
 package miniwindows;
 
+import javax.swing.SwingUtilities;
+
 /**
  *
  * @author Nathan
@@ -15,6 +17,9 @@ public class MiniWindows {
      */
     public static void main(String[] args) {
         // TODO code application logic here
+        SwingUtilities.invokeLater(() -> {
+            new Login().setVisible(true); 
+        });
     }
     
 }
