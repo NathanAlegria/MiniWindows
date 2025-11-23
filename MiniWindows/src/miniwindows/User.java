@@ -12,7 +12,6 @@ import java.io.Serializable;
  */
 
 public class User implements Serializable {
-    // Es buena práctica usar un serialVersionUID para la serialización
     private static final long serialVersionUID = 1L; 
     
     private String username;

@@ -29,7 +29,6 @@ import exceptions.PermisoDenegadoException;
 import exceptions.ArchivoInvalidoException;
 import exceptions.OperacionInvalidaException;
 
-// Importar el reproductor que está en su propio paquete (opcional)
 import reproductor.ReproductorGUI;
 
 
@@ -39,11 +38,9 @@ import reproductor.ReproductorGUI;
  */
 public class Desktop extends JFrame {
 
-    // --- CONSTANTES ---
     private static final String BACKGROUND_IMAGE = "Imagenes/Fondo.png";
     public static final String Z_ROOT_PATH = "Z_ROOT" + File.separator;
 
-    // Apps (nombre + emoji) usadas por el buscador y menú inicio
     private final String[][] APPS = {
             {"Archivos", "🗂️"},
             {"Reproductor Musical", "🎵"},
@@ -57,7 +54,6 @@ public class Desktop extends JFrame {
     private JDesktopPane desktopPane;
     private JPopupMenu startMenu;
 
-    // Referencia para los iconos del escritorio para ocultarlos/mostrarlos
     private JPanel desktopIconPanel;
     private boolean iconsHidden = false;
 
@@ -82,7 +78,6 @@ public class Desktop extends JFrame {
         background.setBounds(0, 0, screenWidth, screenHeight);
         desktopPane.add(background, JLayeredPane.DEFAULT_LAYER);
 
-        // Panel de contenido
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BorderLayout());
         contentPanel.setOpaque(false);
@@ -93,7 +88,6 @@ public class Desktop extends JFrame {
         // Barra de tareas
         contentPanel.add(createModernTaskbar(), BorderLayout.SOUTH);
 
-        // Iconos del escritorio
         JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
         iconPanel.setOpaque(false);
 
@@ -102,7 +96,6 @@ public class Desktop extends JFrame {
 
         contentPanel.add(iconPanel, BorderLayout.NORTH);
 
-        // Guardamos referencia para ocultar/mostrar
         this.desktopIconPanel = iconPanel;
 
         add(desktopPane);
@@ -110,8 +103,6 @@ public class Desktop extends JFrame {
         revalidate();
         repaint();
     }
-
-    // ------------------ TASKBAR & START MENU ------------------
 
     private JPanel createModernTaskbar() {
         JPanel taskbar = new JPanel();
@@ -291,11 +282,7 @@ public class Desktop extends JFrame {
             default -> JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
         }
     }
-
-    // ------------------ LANZAR APLICACIONES ------------------
-
-    // Contenido de la clase Desktop.java (parte relevante)
-
+    
 private void launchFileExplorer() {
     JInternalFrame fileFrame = new JInternalFrame("Carpeta personal - Z:\\" + currentUser.getUsername(),
             true, true, true, true);
@@ -330,7 +317,6 @@ private void launchFileExplorer() {
         updateContentPanel(contentIconPanel, initialPath);
     } catch (CarpetanoEncontradaException | PermisoDenegadoException | OperacionInvalidaException ex) {
         JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-        // mostramos algo por defecto
         contentIconPanel.add(new JLabel("No se pudo cargar la carpeta: " + initialPath));
     }
 
@@ -370,7 +356,6 @@ private void launchFileExplorer() {
                 hideDesktopIcons();
                 frame.setBounds(0, 0, desktopPane.getWidth(), desktopPane.getHeight() - 40);
             } else {
-                // Si la ventana se restaura, mostramos los íconos inmediatamente
                 showDesktopIcons();
             }
         }
@@ -382,7 +367,6 @@ private void launchFileExplorer() {
 
         @Override
         public void componentHidden(ComponentEvent e) {
-            // Este evento no se dispara siempre al cerrar, por eso necesitamos internalFrameClosed
             showDesktopIcons();
         }
     });
@@ -395,7 +379,6 @@ private void launchFileExplorer() {
 
         @Override
         public void internalFrameDeactivated(javax.swing.event.InternalFrameEvent e) {
-            // Comprueba si alguna otra ventana está maximizada (excluyendo la actual)
             boolean anyMax = false;
             for (JInternalFrame f : desktopPane.getAllFrames()) {
                 if (f.isMaximum() && f != fileFrame) { 
@@ -408,9 +391,7 @@ private void launchFileExplorer() {
         
         @Override
         public void internalFrameClosed(javax.swing.event.InternalFrameEvent e) {
-            // ** CORRECCIÓN CLAVE: Restablece la visibilidad de los iconos al cerrar la ventana. **
             boolean anyMax = false;
-            // Recorremos todas las ventanas internas restantes.
             for (JInternalFrame f : desktopPane.getAllFrames()) {
                 if (f.isMaximum()) { 
                     anyMax = true; 
@@ -418,7 +399,6 @@ private void launchFileExplorer() {
                 }
             }
             
-            // Si no queda ninguna ventana maximizada, mostramos los íconos.
             if (!anyMax) {
                 showDesktopIcons();
             }
@@ -453,12 +433,7 @@ private void launchFileExplorer() {
         }
     }
 
-    // ------------------ LOGICA DE ARCHIVOS ------------------
-
-    /**
-     * Actualiza el panel de contenido mostrando archivos y carpetas.
-     * Lanza exceptions personalizadas cuando corresponda.
-     */
+    
     private void updateContentPanel(JPanel panel, String path)
             throws CarpetanoEncontradaException, PermisoDenegadoException, OperacionInvalidaException {
 
@@ -466,9 +441,7 @@ private void launchFileExplorer() {
 
         File currentDir = new File(path);
 
-        // Verificamos la ruta:
         if (!currentDir.exists() || !currentDir.isDirectory()) {
-            // Si está dentro de Z_ROOT, intentamos crear la carpeta del usuario
             if (path.startsWith(Z_ROOT_PATH)) {
                 try {
                     boolean created = currentDir.mkdirs();
@@ -487,7 +460,6 @@ private void launchFileExplorer() {
 
         File[] files = currentDir.listFiles();
         if (files == null) {
-            // puede ser permisos o IO error
             throw new PermisoDenegadoException("No se pueden listar los archivos en: " + path);
         }
 
@@ -508,10 +480,7 @@ private void launchFileExplorer() {
                     }
                 }));
             } else {
-                // Validamos nombre de archivo simple (ejemplo)
                 if (file.getName().contains("..")) {
-                    // nombre inválido
-                    // mostramos el archivo pero con aviso
                     panel.add(createFileIcon(file.getName() + " (nombre inválido)"));
                 } else {
                     panel.add(createFileIcon(file.getName()));
@@ -571,7 +540,6 @@ private void launchFileExplorer() {
         return userNode;
     }
 
-    // --- COMPONENTES DE UI ---
 
     private JPanel createDesktopIcon(String emoji, String name, java.awt.event.ActionListener doubleClickListener) {
         JPanel iconPanel = new JPanel();

@@ -15,18 +15,15 @@ import java.util.List;
  */
 
 public class UserManager {
-    // *** NUEVAS CONSTANTES PARA EL SISTEMA DE ARCHIVOS ***
-    private static final String Z_ROOT = "Z_ROOT" + File.separator; // Usamos un nombre de carpeta local simulando Z:\
+    private static final String Z_ROOT = "Z_ROOT" + File.separator;
     private static final String USER_FILE = "usuarios.sop";
     private static final String ADMIN_PASSWORD = "Adm!1"; 
 
-    // Método de carga: Carga del archivo binario y crea el Admin si no existe
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<>();
         File file = new File(USER_FILE);
 
         if (!file.exists()) {
-            // Inicialización: Crea el Admin y su estructura de archivos
             User admin = new User("Admin", ADMIN_PASSWORD, true);
             users.add(admin);
             saveUsers(users);
@@ -37,12 +34,10 @@ public class UserManager {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             users = (List<User>) ois.readObject();
         } catch (Exception e) {
-            // Error de carga. Devolver lista vacía para evitar fallos.
         }
         return users;
     }
 
-    // Método para obtener la lista de usuarios. Recarga la lista para asegurar que sea la más reciente.
     public static List<User> getUsers() {
         return loadUsers();
     }
@@ -69,32 +64,28 @@ public class UserManager {
         
         for (User user : users) {
             if (user.getUsername().equalsIgnoreCase(username)) {
-                return false; // Nombre de usuario ya tomado
+                return false; 
             }
         }
         
         User newUser = new User(username, password, false);
         users.add(newUser);
         saveUsers(users);
-        createInitialDirectories(username); // Llamada al sistema de archivos
+        createInitialDirectories(username); 
         
         return true;
     }
     
-    // *** IMPLEMENTACIÓN REQUERIDA: Creación de directorios iniciales ***
     private static void createInitialDirectories(String username) {
         try {
-            // 1. Crear el directorio Z_ROOT (si no existe)
             File zRoot = new File(Z_ROOT);
             if (!zRoot.exists()) {
                 zRoot.mkdir();
             }
 
-            // 2. Crear el directorio Z_ROOT/usuario
             File userRoot = new File(Z_ROOT + username);
             userRoot.mkdirs(); 
             
-            // 3. Crear las 3 carpetas básicas dentro de Z_ROOT/usuario
             String[] defaultFolders = {"Mis Documentos", "Música", "Mis Imágenes"};
             
             if (userRoot.exists()) {
@@ -104,7 +95,6 @@ public class UserManager {
                 }
             }
         } catch (Exception e) {
-            // Manejar errores de creación de directorios
         }
     }
 }

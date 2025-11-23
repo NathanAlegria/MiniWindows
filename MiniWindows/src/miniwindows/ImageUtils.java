@@ -17,13 +17,11 @@ public class ImageUtils {
     public static ImageIcon getScaledIcon(String path, int width, int height) {
         Image image = null;
         try {
-            // Intento 1: Cargar como recurso ABSOLUTO (ruta que inicia en el classpath)
             URL imageUrl = ImageUtils.class.getClassLoader().getResource(path);
             
             if (imageUrl != null) {
                 image = new ImageIcon(imageUrl).getImage();
             } else {
-                // Intento 2: Cargar como archivo local
                 image = new ImageIcon(path).getImage();
                 if (image.getWidth(null) == -1) {
                     image = null;
@@ -35,7 +33,6 @@ public class ImageUtils {
                 return new ImageIcon(scaledImage);
             }
         } catch (Exception e) {
-            // Manejo silencioso.
         }
         return null;
     }

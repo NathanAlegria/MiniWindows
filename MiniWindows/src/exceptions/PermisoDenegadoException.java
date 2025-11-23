@@ -8,13 +8,20 @@ package exceptions;
  *
  * @author Nathan
  */
-
 /**
  * Lanzada cuando la operación no tiene permisos para completarse.
  */
 public class PermisoDenegadoException extends Exception {
-    public PermisoDenegadoException() { super(); }
-    public PermisoDenegadoException(String message) { super(message); }
-    public PermisoDenegadoException(String message, Throwable cause) { super(message, cause); }
-}
 
+    public PermisoDenegadoException() {
+        super();
+    }
+
+    public PermisoDenegadoException(String message) {
+        super(message);
+    }
+
+    public PermisoDenegadoException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

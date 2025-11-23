@@ -13,7 +13,6 @@ import java.util.List;
  *
  * @author Nathan
  */
-// NOTA: Se asume que la clase Desktop existe y es accesible.
 public class Login extends JFrame {
 
     private static final String BACKGROUND_IMAGE = "Imagenes/Fondo.png";
@@ -28,7 +27,6 @@ public class Login extends JFrame {
     private CardLayout cardLayout;
 
     public Login() {
-        // CORRECCIÓN: Usar loadUsers() para asegurar la inicialización de Admin y el sistema de archivos
         UserManager.loadUsers();
 
         setTitle("Mini-Windows - Iniciar Sesión");
@@ -52,7 +50,6 @@ public class Login extends JFrame {
 
         add(mainPanel);
 
-        // Intenta establecer el usuario actual al último guardado o "Admin" por defecto
         List<User> initialUsers = UserManager.getUsers();
         if (!initialUsers.isEmpty()) {
             this.currentUser = initialUsers.get(0).getUsername();
@@ -80,7 +77,6 @@ public class Login extends JFrame {
         txtPassword.setMaximumSize(new Dimension(250, 35));
         txtPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Configuración de visibilidad de contraseña (contraste)
         txtPassword.setForeground(Color.WHITE);
         txtPassword.setCaretColor(Color.WHITE);
         txtPassword.setEchoChar('•');
@@ -108,7 +104,6 @@ public class Login extends JFrame {
         btnLogin.addActionListener(e -> attemptLogin());
         txtPassword.addActionListener(e -> attemptLogin());
         btnOtherUser.addActionListener(e -> {
-            // Recarga la lista de usuarios cada vez que se cambia a la selección
             cardPanel.remove(cardPanel.getComponent(1));
             cardPanel.add(createUserSelectionPanel(), "USER_SELECTION");
             cardLayout.show(cardPanel, "USER_SELECTION");
@@ -136,7 +131,7 @@ public class Login extends JFrame {
         JPanel usersDisplay = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 0));
         usersDisplay.setOpaque(false);
 
-        List<User> userList = UserManager.getUsers(); // Obtiene la lista más reciente
+        List<User> userList = UserManager.getUsers(); 
 
         for (User user : userList) {
             usersDisplay.add(createUserIconPanel(user.getUsername()));
@@ -255,7 +250,6 @@ public class Login extends JFrame {
                 return;
             }
 
-            // 1. Validar la contraseña usando la clase Password
             if (!Password.isValid(newPassword)) {
                 String errorMsg = Password.getErrorReason(newPassword);
                 JOptionPane.showMessageDialog(this,
@@ -265,13 +259,11 @@ public class Login extends JFrame {
                 return;
             }
 
-            // 2. Intentar crear el usuario y sus directorios
             if (UserManager.createUser(newUsername, newPassword)) {
                 JOptionPane.showMessageDialog(this,
                         "Usuario '" + newUsername + "' creado exitosamente. Ahora inicie sesión.",
                         "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
-                // Forzar la actualización de la lista de usuarios en la vista
                 cardPanel.remove(cardPanel.getComponent(1));
                 cardPanel.add(createUserSelectionPanel(), "USER_SELECTION");
                 cardLayout.show(cardPanel, "USER_SELECTION");
@@ -284,7 +276,6 @@ public class Login extends JFrame {
         }
     }
 
-    // Clase BackgroundPanel incluida en Login.java
     private class BackgroundPanel extends JPanel {
 
         private Image backgroundImage;

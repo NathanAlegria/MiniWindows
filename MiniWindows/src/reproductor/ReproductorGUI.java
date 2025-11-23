@@ -7,26 +7,20 @@ package reproductor;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.BufferedInputStream;
-import javazoom.jl.player.Player;
+import javax.sound.sampled.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
  * @author Nathan
  */
-
 public class ReproductorGUI extends JFrame {
 
-    // --- CAMPOS DE LA CLASE ---
-    private Player player;
-    private Thread playerThread;
+    private Clip clip;
     private File currentFile;
-    private long pausedFrame = 0; 
+    private long pausedFrame = 0;
+
     private boolean isLoaded = false;
-    
-    // --- COMPONENTES DE LA INTERFAZ ---
     private JButton playButton, stopButton, pauseButton, addButton;
     private JLabel nowPlayingLabel;
     private JLabel imageLabel;
@@ -61,43 +55,34 @@ public class ReproductorGUI extends JFrame {
         add(nowPlayingLabel, BorderLayout.CENTER);
 
         JPanel controlPanel = new JPanel();
-        
+
         int buttonWidth = 80;
         int buttonHeight = 50;
 
-        // Botón Play
         try {
             ImageIcon playIcon = new ImageIcon(getClass().getResource("/Imagenes/Bplay.jpg"));
-            Image playImage = playIcon.getImage();
-            Image scaledPlayImage = playImage.getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
-            playButton = new JButton(new ImageIcon(scaledPlayImage));
+            Image scaled = playIcon.getImage().getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
+            playButton = new JButton(new ImageIcon(scaled));
             setupImageButton(playButton, buttonWidth, buttonHeight);
         } catch (Exception e) {
-            System.err.println("Error al cargar la imagen del botón Play: " + e.getMessage());
             playButton = new JButton("▶ Play");
         }
 
-        // Botón Pause
         try {
-            ImageIcon pauseIcon = new ImageIcon(getClass().getResource("/Imagenes/Bpause.jpg"));
-            Image pauseImage = pauseIcon.getImage();
-            Image scaledPauseImage = pauseImage.getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
-            pauseButton = new JButton(new ImageIcon(scaledPauseImage));
+            ImageIcon icon = new ImageIcon(getClass().getResource("/Imagenes/Bpause.jpg"));
+            Image scaled = icon.getImage().getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
+            pauseButton = new JButton(new ImageIcon(scaled));
             setupImageButton(pauseButton, buttonWidth, buttonHeight);
         } catch (Exception e) {
-            System.err.println("Error al cargar la imagen del botón Pause: " + e.getMessage());
             pauseButton = new JButton("⏸ Pause");
         }
 
-        // Botón Stop
         try {
-            ImageIcon stopIcon = new ImageIcon(getClass().getResource("/Imagenes/Bstop.jpg"));
-            Image stopImage = stopIcon.getImage();
-            Image scaledStopImage = stopImage.getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
-            stopButton = new JButton(new ImageIcon(scaledStopImage));
+            ImageIcon icon = new ImageIcon(getClass().getResource("/Imagenes/Bstop.jpg"));
+            Image scaled = icon.getImage().getScaledInstance(buttonWidth, buttonHeight, Image.SCALE_SMOOTH);
+            stopButton = new JButton(new ImageIcon(scaled));
             setupImageButton(stopButton, buttonWidth, buttonHeight);
         } catch (Exception e) {
-            System.err.println("Error al cargar la imagen del botón Stop: " + e.getMessage());
             stopButton = new JButton("■ Stop");
         }
 
@@ -107,17 +92,17 @@ public class ReproductorGUI extends JFrame {
         controlPanel.add(pauseButton);
         controlPanel.add(stopButton);
         controlPanel.add(addButton);
-        
+
         addButton.addActionListener(e -> selectAndLoadFile());
         playButton.addActionListener(e -> playMusic());
         pauseButton.addActionListener(e -> pauseMusic());
         stopButton.addActionListener(e -> stopMusic());
-        
+
         updateButtonState(false);
-        
+
         add(controlPanel, BorderLayout.SOUTH);
     }
-    
+
     private void setupImageButton(JButton button, int width, int height) {
         button.setPreferredSize(new Dimension(width + 10, height + 5));
         button.setFocusPainted(false);
@@ -126,45 +111,41 @@ public class ReproductorGUI extends JFrame {
     }
 
     private void selectAndLoadFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter("MP3 Files (*.mp3)", "mp3"));
-        
-        int result = fileChooser.showOpenDialog(this);
-        
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("Audio Files (wav, aiff, au)", "wav", "aiff", "au"));
+
+        int result = chooser.showOpenDialog(this);
+
         if (result == JFileChooser.APPROVE_OPTION) {
-            currentFile = fileChooser.getSelectedFile();
+            currentFile = chooser.getSelectedFile();
             pausedFrame = 0;
             loadAudioFile();
         }
     }
-    
+
     private void loadAudioFile() {
-        if (player != null) { player.close(); }
-        if (currentFile == null) return;
-        
-        long streamPosition = pausedFrame; 
-        
         try {
-            FileInputStream fis = new FileInputStream(currentFile);
-            
-            if (streamPosition > 0) {
-                long skippedBytes = fis.skip(streamPosition);
-                if (skippedBytes != streamPosition) {
-                    System.err.println("Advertencia: No se saltaron los bytes esperados. Reanudación imprecisa.");
-                }
+            if (clip != null) {
+                clip.stop();
+                clip.close();
             }
-            
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            player = new Player(bis); 
-            
+
+            if (currentFile == null) return;
+
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(currentFile);
+            clip = AudioSystem.getClip();
+            clip.open(audioStream);
+
             nowPlayingLabel.setText("Now Playing: " + currentFile.getName());
             isLoaded = true;
             updateButtonState(true);
-        } catch (Exception ex) {
-            nowPlayingLabel.setText("Now Playing: Error de carga");
+
+        } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
-                "Error al cargar el archivo con JLayer.\n" + ex.getMessage(),
-                "Error de Audio", JOptionPane.ERROR_MESSAGE);
+                    "Error al cargar audio: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+
             isLoaded = false;
             currentFile = null;
             updateButtonState(false);
@@ -172,41 +153,21 @@ public class ReproductorGUI extends JFrame {
     }
 
     private void playMusic() {
-        if (!isLoaded || currentFile == null) return;
-        
-        if (playerThread != null && playerThread.isAlive()) {
-            return;
-        }
+        if (!isLoaded || clip == null) return;
 
-        loadAudioFile();
+        clip.setMicrosecondPosition(pausedFrame);
+        clip.start();
 
-        if (player != null) {
-            playerThread = new Thread(() -> {
-                try {
-                    player.play();    
-                    if (pausedFrame > 0) {
-                        pausedFrame = 0; 
-                    }
-                } catch (Exception e) {
-                } finally {
-                    if (player != null && player.isComplete()) {
-                        SwingUtilities.invokeLater(() -> stopMusic());
-                    }
-                }
-            });
-            playerThread.start();
-            
-            playButton.setEnabled(false);
-            pauseButton.setEnabled(true);
-            stopButton.setEnabled(true);
-        }
+        playButton.setEnabled(false);
+        pauseButton.setEnabled(true);
+        stopButton.setEnabled(true);
     }
 
     private void pauseMusic() {
-        if (player != null && playerThread != null && playerThread.isAlive()) {
-            pausedFrame = player.getPosition();
-            player.close();
-            
+        if (clip != null && clip.isRunning()) {
+            pausedFrame = clip.getMicrosecondPosition();
+            clip.stop();
+
             playButton.setEnabled(true);
             pauseButton.setEnabled(false);
             stopButton.setEnabled(true);
@@ -214,15 +175,17 @@ public class ReproductorGUI extends JFrame {
     }
 
     private void stopMusic() {
-        if (player != null) {
-            player.close();
-            playerThread = null;
+        if (clip != null) {
+            clip.stop();
+            clip.setMicrosecondPosition(0);
             pausedFrame = 0;
-            isLoaded = true;
-            updateButtonState(true); 
+
+            playButton.setEnabled(true);
+            pauseButton.setEnabled(false);
+            stopButton.setEnabled(false);
         }
     }
-    
+
     private void updateButtonState(boolean loaded) {
         if (loaded) {
             playButton.setEnabled(true);
