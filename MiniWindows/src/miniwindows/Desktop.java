@@ -4,6 +4,7 @@
  */
 package miniwindows;
 
+import CMD.CMD_GUI;
 import exceptions.OperacionInvalidaException;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -422,8 +423,18 @@ private void launchFileExplorer() {
     }
 
     private void launchConsole() {
-        JOptionPane.showMessageDialog(this, "Lanzando Consola de Comandos (Req. 6)...");
+        CMD_GUI cmd = new CMD_GUI();
+        cmd.setVisible(true);
+
+        cmd.setAlwaysOnTop(true);   // Lo trae al frente
+        cmd.toFront();
+        cmd.requestFocus();
+
+        // Permite que el usuario vuelva a poner otras ventanas encima
+        SwingUtilities.invokeLater(() -> cmd.setAlwaysOnTop(false));
     }
+
+
 
     private void launchMusicPlayer() {
         try {
