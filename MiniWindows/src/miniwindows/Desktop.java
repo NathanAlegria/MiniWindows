@@ -2,17 +2,18 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
+
 package miniwindows;
 
 import exceptions.*;
+
+import CMD.CMD_GUI;
+import exceptions.OperacionInvalidaException;
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 import java.awt.event.*;
 import java.io.File;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import reproductor.ReproductorGUI;
 import EditordeTexto.EditorTexto;
 
@@ -20,18 +21,17 @@ import EditordeTexto.EditorTexto;
  *
  * @author Nathan
  */
-
 public class Desktop extends JFrame {
 
     private static final String BACKGROUND_IMAGE = "Imagenes/Fondo.png";
     public static final String Z_ROOT_PATH = "Z_ROOT" + File.separator;
 
     private final String[][] APPS = {
-            {"Archivos", "🗂️"},
-            {"Reproductor Musical", "🎵"},
-            {"Texto", "📝"},
-            {"Imágenes", "🖼️"},
-            {"Consola", "🚀"}
+        {"Archivos", "🗂️"},
+        {"Reproductor Musical", "🎵"},
+        {"Texto", "📝"},
+        {"Imágenes", "🖼️"},
+        {"Consola", "🚀"}
     };
 
     private final User currentUser;
@@ -42,7 +42,7 @@ public class Desktop extends JFrame {
     private JLabel timeLabel;
     private javax.swing.Timer clockTimer;
 
-    // Para cascada
+    // Cascada
     private int cascadeX = 30;
     private int cascadeY = 30;
     private final int cascadeStep = 30;
@@ -51,7 +51,6 @@ public class Desktop extends JFrame {
         this.currentUser = user;
         setTitle("Mini-Windows Desktop - Sesión de: " + user.getUsername());
 
-        // Tamaño ajustado (95% pantalla)
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int w = (int) (screen.width * 0.95);
         int h = (int) (screen.height * 0.95);
@@ -74,12 +73,15 @@ public class Desktop extends JFrame {
 
         contentPanel.add(createModernTaskbar(), BorderLayout.SOUTH);
 
-        // Iconos del escritorio
+        // ICONOS ESCRITORIO
         JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
         iconPanel.setOpaque(false);
+
         iconPanel.add(createDesktopIcon("🗂️", "Archivos", e -> launchFileExplorer()));
         iconPanel.add(createDesktopIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         iconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
+        iconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
+
         contentPanel.add(iconPanel, BorderLayout.NORTH);
         this.desktopIconPanel = iconPanel;
 
@@ -107,13 +109,20 @@ public class Desktop extends JFrame {
         searchBar.setBackground(new Color(60, 60, 60));
         searchBar.setForeground(Color.WHITE);
         searchBar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        searchBar.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusGained(FocusEvent e) { if ("Buscar".equals(searchBar.getText())) searchBar.setText(""); }
-            public void focusLost(FocusEvent e) { if (searchBar.getText().trim().isEmpty()) searchBar.setText("Buscar"); }
+
+        searchBar.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) {
+                if ("Buscar".equals(searchBar.getText())) searchBar.setText("");
+            }
+            public void focusLost(FocusEvent e) {
+                if (searchBar.getText().trim().isEmpty()) searchBar.setText("Buscar");
+            }
         });
+
         searchBar.addActionListener(e -> {
             String q = searchBar.getText().trim().toLowerCase();
             if (q.isEmpty() || "buscar".equalsIgnoreCase(q)) return;
+
             for (String[] app : APPS) {
                 if (app[0].toLowerCase().startsWith(q)) {
                     openAppByName(app[0]);
@@ -123,10 +132,11 @@ public class Desktop extends JFrame {
         });
         leftPanel.add(searchBar);
 
-        // Agregar iconos en la barra de tareas
+        // BOTONES EN LA BARRA DE TAREAS
         leftPanel.add(createTaskbarIcon("🗂️", "Archivos", e -> launchFileExplorer()));
         leftPanel.add(createTaskbarIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         leftPanel.add(createTaskbarIcon("📝", "Texto", e -> launchTextEditor()));
+        leftPanel.add(createTaskbarIcon("🚀", "Consola", e -> launchConsole()));
 
         taskbar.add(leftPanel, BorderLayout.WEST);
 
@@ -141,7 +151,10 @@ public class Desktop extends JFrame {
     }
 
     private void showStartMenu(JButton source) {
-        if (startMenu != null && startMenu.isShowing()) { startMenu.setVisible(false); return; }
+        if (startMenu != null && startMenu.isShowing()) {
+            startMenu.setVisible(false);
+            return;
+        }
 
         startMenu = new JPopupMenu();
         startMenu.setLayout(new BorderLayout());
@@ -178,8 +191,8 @@ public class Desktop extends JFrame {
         startMenu.add(appGrid, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new GridLayout(1, 2, 5, 5));
-        bottom.setBorder(BorderFactory.createEmptyBorder(8,8,8,8));
-        bottom.setBackground(new Color(45,45,45));
+        bottom.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        bottom.setBackground(new Color(45, 45, 45));
 
         JButton logout = new JButton("⏻ Cerrar Aplicación");
         logout.setBackground(new Color(150, 0, 0));
@@ -191,8 +204,7 @@ public class Desktop extends JFrame {
         switchAccount.setForeground(Color.WHITE);
         switchAccount.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                Login login = new Login();
-                login.setVisible(true);
+                new Login().setVisible(true);
                 Desktop.this.dispose();
             });
         });
@@ -206,7 +218,8 @@ public class Desktop extends JFrame {
 
     private void startClockTimer() {
         clockTimer = new javax.swing.Timer(1000, e -> {
-            timeLabel.setText(java.time.LocalTime.now().withNano(0).toString() + " | " + java.time.LocalDate.now().toString());
+            timeLabel.setText(java.time.LocalTime.now().withNano(0).toString()
+                    + " | " + java.time.LocalDate.now().toString());
         });
         clockTimer.setInitialDelay(0);
         clockTimer.start();
@@ -216,10 +229,15 @@ public class Desktop extends JFrame {
         try {
             File userRoot = new File(Z_ROOT_PATH + currentUser.getUsername());
             if (!userRoot.exists()) userRoot.mkdirs();
-            FileExplorerWindow fileExplorer = new FileExplorerWindow(currentUser, userRoot);
+
+            FileExplorerWindow fileExplorer
+                    = new FileExplorerWindow(currentUser, userRoot);
+
             addInternalFrame(fileExplorer);
+
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "No se pudo abrir el explorador: " + ex.toString());
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo abrir el explorador: " + ex.toString());
         }
     }
 
@@ -229,17 +247,23 @@ public class Desktop extends JFrame {
     }
 
     private void launchMusicPlayer() {
-    ReproductorGUI player = new ReproductorGUI(currentUser); 
-    addInternalFrame(player);
-}
+        ReproductorGUI player = new ReproductorGUI(currentUser);
+        addInternalFrame(player);
+    }
 
+    private void launchConsole() {
+        CMD_GUI cmd = new CMD_GUI();
+        cmd.setVisible(true); // va como ventana externa
+    }
 
     private void openAppByName(String appName) {
         switch (appName) {
             case "Archivos" -> launchFileExplorer();
             case "Reproductor Musical" -> launchMusicPlayer();
             case "Texto" -> launchTextEditor();
-            default -> JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
+            case "Consola" -> launchConsole();
+            default -> JOptionPane.showMessageDialog(this,
+                    "Aplicación no encontrada: " + appName);
         }
     }
 
@@ -256,32 +280,34 @@ public class Desktop extends JFrame {
     }
 
     private JPanel createDesktopIcon(String emoji, String name, ActionListener doubleClickListener) {
-        JPanel iconPanel = new JPanel(new BorderLayout());
-        iconPanel.setOpaque(false);
-        iconPanel.setPreferredSize(new Dimension(100, 80));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(100, 80));
 
-        JLabel iconLabel = new JLabel(emoji, SwingConstants.CENTER);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        iconLabel.setForeground(Color.WHITE);
+        JLabel icon = new JLabel(emoji, SwingConstants.CENTER);
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        icon.setForeground(Color.WHITE);
 
-        JLabel nameLabel = new JLabel(name, SwingConstants.CENTER);
-        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        nameLabel.setForeground(Color.WHITE);
+        JLabel label = new JLabel(name, SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(Color.WHITE);
 
-        iconPanel.add(iconLabel, BorderLayout.CENTER);
-        iconPanel.add(nameLabel, BorderLayout.SOUTH);
+        panel.add(icon, BorderLayout.CENTER);
+        panel.add(label, BorderLayout.SOUTH);
 
         if (doubleClickListener != null) {
-            iconPanel.addMouseListener(new MouseAdapter() {
-                public void mouseClicked(MouseEvent evt) {
-                    if (evt.getClickCount() == 2 && !iconsHidden) {
-                        doubleClickListener.actionPerformed(new ActionEvent(iconPanel, ActionEvent.ACTION_PERFORMED, null));
+            panel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2 && !iconsHidden) {
+                        doubleClickListener.actionPerformed(
+                                new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, name));
                     }
                 }
             });
         }
 
-        return iconPanel;
+        return panel;
     }
 
     private JPanel createAppMenuItem(String emoji, String name, ActionListener listener) {
@@ -302,7 +328,8 @@ public class Desktop extends JFrame {
 
         panel.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                listener.actionPerformed(new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, ""));
+                listener.actionPerformed(
+                        new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, ""));
             }
         });
 
@@ -310,10 +337,10 @@ public class Desktop extends JFrame {
     }
 
     private void addInternalFrame(JInternalFrame frame) {
-        // Posicionar en cascada
         frame.setLocation(cascadeX, cascadeY);
         cascadeX += cascadeStep;
         cascadeY += cascadeStep;
+
         if (cascadeX + frame.getWidth() > desktopPane.getWidth()) cascadeX = 30;
         if (cascadeY + frame.getHeight() > desktopPane.getHeight()) cascadeY = 30;
 
@@ -324,17 +351,28 @@ public class Desktop extends JFrame {
 
     private class BackgroundPanel extends JPanel {
         private Image backgroundImage;
+
         public BackgroundPanel(String path) {
             try {
-                URL imageUrl = getClass().getClassLoader().getResource(path);
-                if (imageUrl != null) backgroundImage = new ImageIcon(imageUrl).getImage();
-                else backgroundImage = new ImageIcon(path).getImage();
-            } catch (Exception e) { backgroundImage = null; }
+                URL url = getClass().getClassLoader().getResource(path);
+                if (url != null) {
+                    backgroundImage = new ImageIcon(url).getImage();
+                } else {
+                    backgroundImage = new ImageIcon(path).getImage();
+                }
+            } catch (Exception e) {
+                backgroundImage = null;
+            }
         }
+
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (backgroundImage != null) g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-            else { g.setColor(new Color(25, 25, 112)); g.fillRect(0,0,getWidth(),getHeight()); }
+            if (backgroundImage != null)
+                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+            else {
+                g.setColor(new Color(25, 25, 112));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
         }
     }
 }
