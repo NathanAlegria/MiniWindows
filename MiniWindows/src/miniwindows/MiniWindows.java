@@ -20,6 +20,6 @@ public class MiniWindows {
         SwingUtilities.invokeLater(() -> {
             new Login().setVisible(true); 
         });
-    }
-    
+    } 
+     
 }

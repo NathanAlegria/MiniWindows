@@ -10,10 +10,10 @@ import java.io.Serializable;
  *
  * @author Nathan
  */
-
 public class User implements Serializable {
-    private static final long serialVersionUID = 1L; 
-    
+
+    private static final long serialVersionUID = 1L;
+
     private String username;
     private String password;
     private boolean isAdmin;
@@ -24,7 +24,15 @@ public class User implements Serializable {
         this.isAdmin = isAdmin;
     }
 
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public boolean isAdmin() { return isAdmin; }
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public boolean isAdmin() {
+        return isAdmin;
+    }
 }

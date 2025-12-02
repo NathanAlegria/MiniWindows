@@ -1,9 +1,9 @@
-/*
+ /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package miniwindows;
-
+ 
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
@@ -30,7 +30,13 @@ public class Login extends JFrame {
         UserManager.loadUsers();
 
         setTitle("Mini-Windows - Iniciar Sesión");
-        setSize(800, 600);
+
+        // Tamaño grande pero no pantalla completa
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int w = (int) (screen.width * 0.99);
+        int h = (int) (screen.height * 0.99);
+        setSize(w, h);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -131,7 +137,7 @@ public class Login extends JFrame {
         JPanel usersDisplay = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 0));
         usersDisplay.setOpaque(false);
 
-        List<User> userList = UserManager.getUsers(); 
+        List<User> userList = UserManager.getUsers();
 
         for (User user : userList) {
             usersDisplay.add(createUserIconPanel(user.getUsername()));
