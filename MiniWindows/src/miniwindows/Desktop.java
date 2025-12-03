@@ -1,21 +1,22 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */package miniwindows;
+ */
+package miniwindows;
 
 import CMD.CMD_GUI;
+import EditordeTexto.EditorTexto;
+import reproductor.ReproductorGUI;
+
 import javax.swing.*;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
-import java.awt.event.ActionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import EditordeTexto.EditorTexto;
-import reproductor.ReproductorGUI;
 
 /**
  *
@@ -37,7 +38,6 @@ public class Desktop extends JFrame {
     private JDesktopPane desktopPane;
     private JPopupMenu startMenu;
     private JPanel desktopIconPanel;
-    private boolean iconsHidden = false;
     private JLabel timeLabel;
     private javax.swing.Timer clockTimer;
 
@@ -45,8 +45,8 @@ public class Desktop extends JFrame {
     private int cascadeY = 30;
     private final int cascadeStep = 30;
 
-    // Para barra de tareas
-    private JPanel taskbarAppPanel; // <-- Aquí se inicializará correctamente
+    // Barra de tareas
+    private JPanel taskbarAppPanel;
     private Map<JInternalFrame, JButton> frameButtonMap = new HashMap<>();
 
     public Desktop(User user) {
@@ -96,6 +96,7 @@ public class Desktop extends JFrame {
         startClockTimer();
     }
 
+    // ---------------- Barra de tareas ----------------
     private JPanel createModernTaskbar() {
         JPanel taskbar = new JPanel(new BorderLayout());
         taskbar.setBackground(new Color(38, 38, 38));
@@ -119,7 +120,6 @@ public class Desktop extends JFrame {
         searchBar.setBackground(new Color(60, 60, 60));
         searchBar.setForeground(Color.WHITE);
         searchBar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
         searchBar.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
                 if ("Buscar".equals(searchBar.getText())) {
@@ -133,7 +133,6 @@ public class Desktop extends JFrame {
                 }
             }
         });
-
         searchBar.addActionListener(e -> {
             String q = searchBar.getText().trim().toLowerCase();
             if (q.isEmpty() || "buscar".equalsIgnoreCase(q)) {
@@ -155,7 +154,7 @@ public class Desktop extends JFrame {
         leftPanel.add(createTaskbarIcon("📝", "Texto", e -> launchTextEditor()));
         leftPanel.add(createTaskbarIcon("🚀", "Consola", e -> launchConsole()));
 
-        // Añadir panel de apps a la barra de tareas
+        // Panel de apps (ventanas abiertas)
         leftPanel.add(taskbarAppPanel);
 
         taskbar.add(leftPanel, BorderLayout.WEST);
@@ -163,13 +162,11 @@ public class Desktop extends JFrame {
         // Panel derecho: reloj
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         rightPanel.setOpaque(false);
-
         timeLabel = new JLabel();
         timeLabel.setForeground(Color.WHITE);
         rightPanel.add(timeLabel);
 
         taskbar.add(rightPanel, BorderLayout.EAST);
-
         return taskbar;
     }
 
@@ -183,6 +180,62 @@ public class Desktop extends JFrame {
         button.setPreferredSize(new Dimension(30, 30));
         button.addActionListener(listener);
         return button;
+    }
+
+    private JPanel createDesktopIcon(String emoji, String name, ActionListener doubleClickListener) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(100, 80));
+
+        JLabel icon = new JLabel(emoji, SwingConstants.CENTER);
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        icon.setForeground(Color.WHITE);
+
+        JLabel label = new JLabel(name, SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(Color.WHITE);
+
+        panel.add(icon, BorderLayout.CENTER);
+        panel.add(label, BorderLayout.SOUTH);
+
+        if (doubleClickListener != null) {
+            panel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        doubleClickListener.actionPerformed(
+                                new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, name));
+                    }
+                }
+            });
+        }
+
+        return panel;
+    }
+
+    private JPanel createAppMenuItem(String emoji, String name, ActionListener listener) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(60, 60, 60));
+        panel.setPreferredSize(new Dimension(90, 90));
+
+        JLabel iconLabel = new JLabel(emoji, SwingConstants.CENTER);
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
+        iconLabel.setForeground(Color.WHITE);
+
+        JLabel nameLabel = new JLabel(name, SwingConstants.CENTER);
+        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        nameLabel.setForeground(Color.WHITE);
+
+        panel.add(iconLabel, BorderLayout.CENTER);
+        panel.add(nameLabel, BorderLayout.SOUTH);
+
+        panel.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                listener.actionPerformed(new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, ""));
+            }
+        });
+
+        return panel;
     }
 
     private void showStartMenu(JButton source) {
@@ -222,7 +275,6 @@ public class Desktop extends JFrame {
                 startMenu.setVisible(false);
             }));
         }
-
         startMenu.add(appGrid, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new GridLayout(1, 2, 5, 5));
@@ -266,46 +318,7 @@ public class Desktop extends JFrame {
         clockTimer.start();
     }
 
-    private void launchFileExplorer() {
-        try {
-            File userRoot = new File(Z_ROOT_PATH + currentUser.getUsername());
-            if (!userRoot.exists()) {
-                userRoot.mkdirs();
-            }
-
-            FileExplorerWindow fileExplorer = new FileExplorerWindow(currentUser, userRoot);
-            addInternalFrame(fileExplorer, "Explorador");
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo abrir el explorador: " + ex.toString());
-        }
-    }
-
-    private void launchTextEditor() {
-        EditorTexto editor = new EditorTexto();
-        addInternalFrame(editor, "Editor de Texto");
-    }
-
-    private void launchMusicPlayer() {
-        ReproductorGUI player = new ReproductorGUI(currentUser);
-        addInternalFrame(player, "Reproductor");
-    }
-
-    private void launchConsole() {
-    try {
-        CMD_GUI cmd = new CMD_GUI();
-        JInternalFrame cmdFrame = new JInternalFrame("Consola", true, true, true, true);
-        cmdFrame.setSize(800, 500);
-        cmdFrame.setLayout(new BorderLayout());
-        cmdFrame.add(cmd.getContentPane(), BorderLayout.CENTER);
-        cmdFrame.setVisible(true);
-        addInternalFrame(cmdFrame, "Consola");
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "No se pudo abrir la consola: " + e.getMessage());
-    }
-}
-
-
+    // ---------------- Métodos para abrir apps ----------------
     private void openAppByName(String appName) {
         switch (appName) {
             case "Archivos" ->
@@ -317,69 +330,60 @@ public class Desktop extends JFrame {
             case "Consola" ->
                 launchConsole();
             default ->
-                JOptionPane.showMessageDialog(this,
-                        "Aplicación no encontrada: " + appName);
+                JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
         }
     }
 
-    private JPanel createDesktopIcon(String emoji, String name, ActionListener doubleClickListener) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        panel.setPreferredSize(new Dimension(100, 80));
-
-        JLabel icon = new JLabel(emoji, SwingConstants.CENTER);
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        icon.setForeground(Color.WHITE);
-
-        JLabel label = new JLabel(name, SwingConstants.CENTER);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        label.setForeground(Color.WHITE);
-
-        panel.add(icon, BorderLayout.CENTER);
-        panel.add(label, BorderLayout.SOUTH);
-
-        if (doubleClickListener != null) {
-            panel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if (e.getClickCount() == 2 && !iconsHidden) {
-                        doubleClickListener.actionPerformed(
-                                new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, name));
-                    }
-                }
-            });
-        }
-
-        return panel;
-    }
-
-    private JPanel createAppMenuItem(String emoji, String name, ActionListener listener) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(60, 60, 60));
-        panel.setPreferredSize(new Dimension(90, 90));
-
-        JLabel iconLabel = new JLabel(emoji, SwingConstants.CENTER);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
-        iconLabel.setForeground(Color.WHITE);
-
-        JLabel nameLabel = new JLabel(name, SwingConstants.CENTER);
-        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        nameLabel.setForeground(Color.WHITE);
-
-        panel.add(iconLabel, BorderLayout.CENTER);
-        panel.add(nameLabel, BorderLayout.SOUTH);
-
-        panel.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                listener.actionPerformed(
-                        new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, ""));
+    private void launchFileExplorer() {
+        try {
+            File userRoot = new File(Z_ROOT_PATH + currentUser.getUsername());
+            if (!userRoot.exists()) {
+                userRoot.mkdirs();
             }
-        });
 
-        return panel;
+            FileExplorerWindow fileExplorer = new FileExplorerWindow(currentUser, userRoot);
+            addInternalFrame(fileExplorer, "Explorador");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "No se pudo abrir el explorador: " + ex.toString());
+        }
     }
 
+    private void launchTextEditor() {
+        EditorTexto editor = new EditorTexto(currentUser);
+        addInternalFrame(editor, "Editor de Texto");
+    }
+
+    private void launchMusicPlayer() {
+        ReproductorGUI player = new ReproductorGUI(currentUser);
+        addInternalFrame(player, "Reproductor");
+    }
+
+    private void launchConsole() {
+        try {
+            CMD_GUI cmd = new CMD_GUI(); // Ahora es un JPanel, ¡correcto!
+            JInternalFrame cmdFrame = new JInternalFrame("Consola", true, true, true, true);
+            cmdFrame.setSize(800, 500);
+            cmdFrame.setLayout(new BorderLayout());
+            cmdFrame.add(cmd, BorderLayout.CENTER); // ¡Ahora funciona!
+            cmdFrame.setVisible(true);
+
+            addInternalFrame(cmdFrame, "Consola");
+
+            cmdFrame.toFront();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "No se pudo abrir la consola: " + e.toString());
+        }
+    }
+
+    // miniwindows.Desktop.java
+// ---------------- Gestión de ventanas internas ----------------
     private void addInternalFrame(JInternalFrame frame, String title) {
+
+        // **CORRECCIÓN:** Esta línea asegura que al cerrar el JInternalFrame, 
+        // solo se disponga de la ventana y no termine el programa principal (JFrame).
+        frame.setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
+
         frame.setLocation(cascadeX, cascadeY);
         cascadeX += cascadeStep;
         cascadeY += cascadeStep;
@@ -399,14 +403,17 @@ public class Desktop extends JFrame {
         taskButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         taskButton.setBackground(new Color(60, 60, 60));
         taskButton.setForeground(Color.WHITE);
+
         taskButton.addActionListener(e -> {
             try {
+                if (frame.isIcon()) {
+                    frame.setIcon(false);
+                }
                 frame.setSelected(true);
             } catch (Exception ignored) {
             }
         });
 
-        // <-- Añadir botón al panel de apps
         taskbarAppPanel.add(taskButton);
         taskbarAppPanel.revalidate();
         taskbarAppPanel.repaint();
@@ -414,11 +421,23 @@ public class Desktop extends JFrame {
         frameButtonMap.put(frame, taskButton);
 
         frame.addInternalFrameListener(new InternalFrameAdapter() {
+            @Override
             public void internalFrameClosed(InternalFrameEvent e) {
                 taskbarAppPanel.remove(taskButton);
                 taskbarAppPanel.revalidate();
                 taskbarAppPanel.repaint();
                 frameButtonMap.remove(frame);
+            }
+
+            @Override
+            public void internalFrameIconified(InternalFrameEvent e) {
+                // Actualiza el estado de la barra de tareas
+                taskButton.setBackground(new Color(80, 80, 80));
+            }
+
+            @Override
+            public void internalFrameDeiconified(InternalFrameEvent e) {
+                taskButton.setBackground(new Color(60, 60, 60));
             }
         });
 
@@ -428,6 +447,7 @@ public class Desktop extends JFrame {
         }
     }
 
+    // ---------------- Fondo de escritorio ----------------
     private class BackgroundPanel extends JPanel {
 
         private Image backgroundImage;

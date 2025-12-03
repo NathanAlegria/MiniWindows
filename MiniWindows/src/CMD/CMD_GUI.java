@@ -14,7 +14,7 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-public class CMD_GUI extends JFrame {
+public class CMD_GUI extends javax.swing.JPanel {
 
     private JTextArea consola;
     private CMD_Funciones gestor1;
@@ -22,11 +22,8 @@ public class CMD_GUI extends JFrame {
     private File directorioActual;
 
     public CMD_GUI() {
-        setTitle("Administrador - Command Prompt");
-        setSize(800, 500);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-
+        setPreferredSize(new java.awt.Dimension(800, 500));
+        setLayout(new java.awt.BorderLayout()); 
         directorioActual = new File(System.getProperty("user.dir"));
         prompt = directorioActual.getAbsolutePath() + "> ";
 
@@ -44,6 +41,7 @@ public class CMD_GUI extends JFrame {
                     e.consume();
 
                     String textoCompleto = consola.getText();
+                    // Esta línea asume que 'prompt' es una variable de clase y funciona
                     int indicePrompt = textoCompleto.lastIndexOf(prompt);
 
                     if (indicePrompt != -1) {
@@ -60,11 +58,15 @@ public class CMD_GUI extends JFrame {
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                    if (cursorEnPrompt()) e.consume();
+                    if (cursorEnPrompt()) {
+                        e.consume();
+                    }
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_UP) {
-                    if (cursorEnPrompt()) e.consume();
+                    if (cursorEnPrompt()) {
+                        e.consume();
+                    }
                 }
             }
 
@@ -80,9 +82,11 @@ public class CMD_GUI extends JFrame {
         consola.append("(c) Nathan y Jeremy. Todos los derechos reservados.\n\n");
         consola.append(prompt);
 
-        add(new JScrollPane(consola));
-        setVisible(true);
+        // Si CMD_GUI extiende JPanel, usa add(componente) para agregar al panel
+        add(new JScrollPane(consola), java.awt.BorderLayout.CENTER);
 
+        // --- LÍNEA DE JFAME ELIMINADA ---
+        // setVisible(true); // El contenedor (JInternalFrame) lo hace visible
         gestor1 = new CMD_Funciones();
     }
 
@@ -101,7 +105,9 @@ public class CMD_GUI extends JFrame {
         }
 
         String[] partes = texto.split("\\s+", 2);
-        if (partes.length > 1) return partes[1].replace("<","").replace(">","").trim();
+        if (partes.length > 1) {
+            return partes[1].replace("<", "").replace(">", "").trim();
+        }
 
         return "";
     }
@@ -117,18 +123,41 @@ public class CMD_GUI extends JFrame {
             String argumento = extraerArgumento(entrada);
 
             switch (comando) {
-                case "Mkdir": ejecutarMkdir(argumento); break;
-                case "Mfile": ejecutarMfile(argumento); break;
-                case "Rm": ejecutarRm(argumento); break;
-                case "Cd": ejecutarCd(argumento); break;
-                case "...": ejecutarRegresarDir(); break;
-                case "Dir": ejecutarDir(); break;
-                case "Date": ejecutarDate(); break;
-                case "Time": ejecutarTime(); break;
-                case "Escribir": ejecutarEscribir(entrada); break;
-                case "Leer": ejecutarLeer(argumento); break;
-                case "Exit": ejecutarExit(); break;
-                default: consola.append("Error: Comando no reconocido - " + comando);
+                case "Mkdir":
+                    ejecutarMkdir(argumento);
+                    break;
+                case "Mfile":
+                    ejecutarMfile(argumento);
+                    break;
+                case "Rm":
+                    ejecutarRm(argumento);
+                    break;
+                case "Cd":
+                    ejecutarCd(argumento);
+                    break;
+                case "...":
+                    ejecutarRegresarDir();
+                    break;
+                case "Dir":
+                    ejecutarDir();
+                    break;
+                case "Date":
+                    ejecutarDate();
+                    break;
+                case "Time":
+                    ejecutarTime();
+                    break;
+                case "Escribir":
+                    ejecutarEscribir(entrada);
+                    break;
+                case "Leer":
+                    ejecutarLeer(argumento);
+                    break;
+                case "Exit":
+                    ejecutarExit();
+                    break;
+                default:
+                    consola.append("Error: Comando no reconocido - " + comando);
             }
 
         } catch (IOException e) {
@@ -145,7 +174,9 @@ public class CMD_GUI extends JFrame {
         }
         if (gestor1.crearCarpeta(directorioActual, nombreCarpeta)) {
             consola.append("Carpeta creada exitosamente");
-        } else consola.append("Error: No se pudo crear la carpeta");
+        } else {
+            consola.append("Error: No se pudo crear la carpeta");
+        }
     }
 
     private void ejecutarMfile(String nombreArchivo) throws IOException {
@@ -155,7 +186,9 @@ public class CMD_GUI extends JFrame {
         }
         if (gestor1.crearArchivo(directorioActual, nombreArchivo)) {
             consola.append("Archivo creado exitosamente");
-        } else consola.append("Error: No se pudo crear el archivo");
+        } else {
+            consola.append("Error: No se pudo crear el archivo");
+        }
     }
 
     private void ejecutarRm(String ruta) throws IOException {
@@ -173,7 +206,9 @@ public class CMD_GUI extends JFrame {
 
         if (gestor1.eliminar(archivoEliminar)) {
             consola.append("Elemento eliminado exitosamente");
-        } else consola.append("Error: No se pudo eliminar");
+        } else {
+            consola.append("Error: No se pudo eliminar");
+        }
     }
 
     private void ejecutarCd(String ruta) {
@@ -192,7 +227,9 @@ public class CMD_GUI extends JFrame {
         if (!anterior.equals(directorioActual)) {
             directorioActual = anterior;
             prompt = directorioActual.getAbsolutePath() + "> ";
-        } else consola.append("Ya está en el directorio raíz");
+        } else {
+            consola.append("Ya está en el directorio raíz");
+        }
     }
 
     private void ejecutarDir() {
@@ -208,7 +245,7 @@ public class CMD_GUI extends JFrame {
     }
 
     private void ejecutarEscribir(String entrada) throws IOException {
-        String resto = entrada.substring(9).trim(); 
+        String resto = entrada.substring(9).trim();
 
         int separador = resto.indexOf(':');
         String nombreArchivo;
@@ -227,7 +264,7 @@ public class CMD_GUI extends JFrame {
             texto = partes[1];
         }
 
-        nombreArchivo = nombreArchivo.replace("<","").replace(">","").trim();
+        nombreArchivo = nombreArchivo.replace("<", "").replace(">", "").trim();
 
         File archivo = new File(directorioActual, nombreArchivo);
         gestor1.escribirArchivo(archivo, texto);

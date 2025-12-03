@@ -162,7 +162,7 @@ public class FileExplorerWindow extends JInternalFrame {
                     currentDir = f;
                     updateFileTable(f);
                 } else if (name.endsWith(".txt")) {
-                    EditorTexto editor = new EditorTexto();
+                    EditorTexto editor = new EditorTexto(currentUser);
                     editor.openFile(f);
                     desktop.add(editor, JLayeredPane.PALETTE_LAYER);
                     editor.setVisible(true);
