@@ -1,9 +1,9 @@
- /*
+/*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package miniwindows;
- 
+
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
@@ -27,19 +27,15 @@ public class Login extends JFrame {
     private CardLayout cardLayout;
 
     public Login() {
+        // Cargar usuarios
         UserManager.loadUsers();
 
         setTitle("Mini-Windows - Iniciar Sesión");
-
-        // Tamaño grande pero no pantalla completa
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        int w = (int) (screen.width * 0.99);
-        int h = (int) (screen.height * 0.99);
-        setSize(w, h);
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setUndecorated(true); // quitar barra de título y bordes
+        setResizable(false);   // no permitir redimensionar
 
+        // ---------------- Contenido ----------------
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
@@ -52,15 +48,32 @@ public class Login extends JFrame {
 
         BackgroundPanel mainPanel = new BackgroundPanel(BACKGROUND_IMAGE);
         mainPanel.setLayout(new GridBagLayout());
-        mainPanel.add(cardPanel);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        mainPanel.add(cardPanel, gbc);
 
         add(mainPanel);
 
+        // Usuario por defecto
         List<User> initialUsers = UserManager.getUsers();
         if (!initialUsers.isEmpty()) {
             this.currentUser = initialUsers.get(0).getUsername();
+            if (lblUsername != null) {
+                lblUsername.setText(this.currentUser);
+            }
         }
 
+        // ---------------- Pantalla completa ----------------
+        // Obtener la resolución actual de pantalla
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize(screenSize.width, screenSize.height);
+        setLocation(0, 0);
+
+        // Mostrar login
+        setVisible(true);
+
+        // Mostrar la card por defecto
         cardLayout.show(cardPanel, "SINGLE_USER");
     }
 
@@ -68,7 +81,7 @@ public class Login extends JFrame {
         JPanel loginContainer = new JPanel();
         loginContainer.setLayout(new BoxLayout(loginContainer, BoxLayout.Y_AXIS));
         loginContainer.setOpaque(false);
-        loginContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        loginContainer.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
         ImageIcon userIcon = ImageUtils.getScaledIcon(USER_ICON_IMAGE, 150, 150);
         lblIcon = new JLabel(userIcon);
@@ -80,19 +93,18 @@ public class Login extends JFrame {
         lblUsername.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         txtPassword = new JPasswordField(15);
-        txtPassword.setMaximumSize(new Dimension(250, 35));
+        txtPassword.setMaximumSize(new Dimension(300, 40));
         txtPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
-
         txtPassword.setForeground(Color.WHITE);
         txtPassword.setCaretColor(Color.WHITE);
         txtPassword.setEchoChar('•');
         txtPassword.setOpaque(true);
-        txtPassword.setBackground(new Color(0, 0, 0, 100));
+        txtPassword.setBackground(new Color(0, 0, 0, 120));
         txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        txtPassword.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        txtPassword.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
 
         JButton btnLogin = new JButton("Ingresar");
-        btnLogin.setMaximumSize(new Dimension(100, 35));
+        btnLogin.setMaximumSize(new Dimension(130, 40));
         btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnLogin.setBackground(new Color(0, 120, 215));
         btnLogin.setForeground(Color.WHITE);
@@ -107,24 +119,27 @@ public class Login extends JFrame {
         btnOtherUser.setBorderPainted(false);
         btnOtherUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
+        // Listeners
         btnLogin.addActionListener(e -> attemptLogin());
         txtPassword.addActionListener(e -> attemptLogin());
         btnOtherUser.addActionListener(e -> {
-            cardPanel.remove(cardPanel.getComponent(1));
+            cardPanel.remove(1);
             cardPanel.add(createUserSelectionPanel(), "USER_SELECTION");
             cardLayout.show(cardPanel, "USER_SELECTION");
         });
 
-        loginContainer.add(Box.createVerticalStrut(20));
+        // Montaje vertical
+        loginContainer.add(Box.createVerticalStrut(40));
         loginContainer.add(lblIcon);
         loginContainer.add(Box.createVerticalStrut(10));
         loginContainer.add(lblUsername);
-        loginContainer.add(Box.createVerticalStrut(20));
+        loginContainer.add(Box.createVerticalStrut(18));
         loginContainer.add(txtPassword);
-        loginContainer.add(Box.createVerticalStrut(10));
+        loginContainer.add(Box.createVerticalStrut(12));
         loginContainer.add(btnLogin);
-        loginContainer.add(Box.createVerticalStrut(30));
+        loginContainer.add(Box.createVerticalStrut(20));
         loginContainer.add(btnOtherUser);
+        loginContainer.add(Box.createVerticalStrut(40));
 
         return loginContainer;
     }
@@ -134,13 +149,17 @@ public class Login extends JFrame {
         selectionPanel.setOpaque(false);
         selectionPanel.setLayout(new GridBagLayout());
 
-        JPanel usersDisplay = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 0));
+        JPanel usersDisplay = new JPanel(new FlowLayout(FlowLayout.CENTER, 36, 10));
         usersDisplay.setOpaque(false);
 
         List<User> userList = UserManager.getUsers();
 
-        for (User user : userList) {
-            usersDisplay.add(createUserIconPanel(user.getUsername()));
+        if (userList.isEmpty()) {
+            usersDisplay.add(new JLabel("No hay usuarios. Cree uno nuevo."));
+        } else {
+            for (User user : userList) {
+                usersDisplay.add(createUserIconPanel(user.getUsername()));
+            }
         }
 
         JButton btnCreate = new JButton("Crear Nuevo Usuario");
@@ -154,8 +173,7 @@ public class Login extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new Insets(50, 0, 50, 0);
-
+        gbc.insets = new Insets(30, 0, 18, 0);
         selectionPanel.add(usersDisplay, gbc);
 
         gbc.gridy = 1;
@@ -191,7 +209,7 @@ public class Login extends JFrame {
         name.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         panel.add(icon);
-        panel.add(Box.createVerticalStrut(5));
+        panel.add(Box.createVerticalStrut(8));
         panel.add(name);
 
         panel.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -206,8 +224,12 @@ public class Login extends JFrame {
 
     private void updateCurrentUser(String newUsername) {
         this.currentUser = newUsername;
-        lblUsername.setText(newUsername);
-        txtPassword.setText("");
+        if (lblUsername != null) {
+            lblUsername.setText(newUsername);
+        }
+        if (txtPassword != null) {
+            txtPassword.setText("");
+        }
     }
 
     private void attemptLogin() {
@@ -217,28 +239,26 @@ public class Login extends JFrame {
         User user = UserManager.validateLogin(username, password);
 
         if (user != null) {
-            JOptionPane.showMessageDialog(this,
-                    "¡Bienvenido, " + user.getUsername() + "!",
-                    "Login Exitoso", JOptionPane.INFORMATION_MESSAGE);
-
             dispose();
-            new Desktop(user).setVisible(true);
-
+            Desktop desktop = new Desktop(user);
+            desktop.setVisible(true);
+            desktop.setExtendedState(JFrame.MAXIMIZED_BOTH);
         } else {
             JOptionPane.showMessageDialog(this,
                     "Contraseña incorrecta para el usuario " + username + ".",
                     "Error de Credenciales", JOptionPane.ERROR_MESSAGE);
-            txtPassword.setText("");
+            if (txtPassword != null) {
+                txtPassword.setText("");
+            }
         }
     }
 
     private void showCreateUserDialog() {
-        JTextField userField = new JTextField(10);
-        JPasswordField passField = new JPasswordField(10);
-
+        JTextField userField = new JTextField(12);
+        JPasswordField passField = new JPasswordField(12);
         passField.setEchoChar('•');
 
-        JPanel panel = new JPanel(new GridLayout(0, 1));
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
         panel.add(new JLabel("Nombre de Usuario:"));
         panel.add(userField);
         panel.add(new JLabel("Contraseña (5 chars EXACTOS, 1 Mayús., 1 Signo Esp.):"));
@@ -252,16 +272,14 @@ public class Login extends JFrame {
             String newPassword = new String(passField.getPassword());
 
             if (newUsername.isEmpty() || newPassword.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "El usuario y la contraseña no pueden estar vacíos.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Usuario y contraseña no pueden estar vacíos.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (!Password.isValid(newPassword)) {
-                String errorMsg = Password.getErrorReason(newPassword);
                 JOptionPane.showMessageDialog(this,
-                        "La contraseña NO cumple los requisitos:\n" + errorMsg,
-                        "Error de Validación de Contraseña",
-                        JOptionPane.ERROR_MESSAGE);
+                        "La contraseña NO cumple los requisitos:\n" + Password.getErrorReason(newPassword),
+                        "Error de Validación de Contraseña", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -270,13 +288,13 @@ public class Login extends JFrame {
                         "Usuario '" + newUsername + "' creado exitosamente. Ahora inicie sesión.",
                         "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
-                cardPanel.remove(cardPanel.getComponent(1));
+                cardPanel.remove(1);
                 cardPanel.add(createUserSelectionPanel(), "USER_SELECTION");
                 cardLayout.show(cardPanel, "USER_SELECTION");
 
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Error al crear usuario: El nombre de usuario '" + newUsername + "' ya existe.",
+                        "El nombre de usuario '" + newUsername + "' ya existe.",
                         "Error de Creación", JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -289,7 +307,6 @@ public class Login extends JFrame {
         public BackgroundPanel(String path) {
             try {
                 URL imageUrl = Login.class.getClassLoader().getResource(path);
-
                 if (imageUrl != null) {
                     backgroundImage = new ImageIcon(imageUrl).getImage();
                 } else {

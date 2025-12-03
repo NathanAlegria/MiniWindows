@@ -19,7 +19,7 @@ public class MiniWindows {
         // TODO code application logic here
         SwingUtilities.invokeLater(() -> {
             new Login().setVisible(true); 
-        });
+        }); 
     } 
      
-}
+} 
