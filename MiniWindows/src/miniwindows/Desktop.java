@@ -6,6 +6,7 @@ package miniwindows;
 
 import CMD.CMD_GUI;
 import EditordeTexto.EditorTexto;
+import Insta.InstagramProject;
 import VisorImagenes.VisorImagenes;
 import reproductor.ReproductorGUI;
 
@@ -335,7 +336,18 @@ public class Desktop extends JFrame {
     }
 
     private void launchInstagram() {
-        // Aqui va el Insta 
+        InstagramProject insta = new InstagramProject();
+
+        JInternalFrame frame = new JInternalFrame("Instagram", true, true, true, true);
+        frame.setSize(900, 700);  // Tamaño del panel
+        frame.setLayout(new BorderLayout());
+        frame.add(insta, BorderLayout.CENTER);
+        frame.setVisible(true);  // Muy importante
+        desktopPane.add(frame);  // Si usas JDesktopPane
+        try {
+            frame.setSelected(true);
+        } catch (Exception e) {
+        }
     }
 
     private void launchFileExplorer() {

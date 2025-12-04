@@ -20,17 +20,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
+
 /**
  *
  * @author jerem
  */
-    public class InstagramProject extends JFrame {
+public class InstagramProject extends JPanel {
 
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private UserManager userManager;
-    private User loggedUser; 
-    private JPanel profileCardContainer; 
+    private User loggedUser;
+    private JPanel profileCardContainer;
 
     // Colores Estilo Instagram Dark Mode
     private final Color BG_COLOR = new Color(0, 0, 0); // Fondo negro
@@ -38,30 +39,26 @@ import javax.imageio.ImageIO;
     private final Color TEXT_COLOR = new Color(250, 250, 250); // Blanco
     private final Color BORDER_COLOR = new Color(54, 54, 54); // Borde sutil
     private final Color BTN_BLUE = new Color(0, 149, 246); // Azul Instagram
-    private final Color POST_BG = new Color(18, 18, 18); // Fondo de post
+    private final Color POST_BG = new Color(18, 18, 18); // Fondo de post 
 
     public InstagramProject() {
-        super("Instagram");
         userManager = new UserManager();
-        
-        setSize(900, 700); 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
+
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(900, 700)); // Tamaño fijo
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // Añadir las vistas
         mainPanel.add(crearPanelLogin(), "LOGIN");
         mainPanel.add(crearPanelRegistro(), "REGISTER");
-        mainPanel.add(crearPanelPrincipal(), "MAIN"); 
-        mainPanel.add(crearPanelProfileSearch(), "PROFILE_SEARCH"); 
-        mainPanel.add(crearPanelCrearPost(), "CREATE_POST"); // Nuevo panel de creación
+        mainPanel.add(crearPanelPrincipal(), "MAIN");
+        mainPanel.add(crearPanelProfileSearch(), "PROFILE_SEARCH");
+        mainPanel.add(crearPanelCrearPost(), "CREATE_POST");
 
-        add(mainPanel);
+        add(mainPanel, BorderLayout.CENTER);
     }
-    
+
     // Método main para ejecutar la aplicación
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -74,11 +71,11 @@ import javax.imageio.ImageIO;
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(BG_COLOR);
 
-        JPanel loginCard = new JPanel(null); 
-        loginCard.setPreferredSize(new Dimension(400, 600)); 
+        JPanel loginCard = new JPanel(null);
+        loginCard.setPreferredSize(new Dimension(400, 600));
         loginCard.setBackground(BG_COLOR);
         loginCard.setBorder(new LineBorder(BORDER_COLOR, 1));
-        
+
         JLabel title = new JLabel("Instagram", SwingConstants.CENTER);
         title.setFont(new Font("Segoe Script", Font.BOLD, 40));
         title.setForeground(TEXT_COLOR);
@@ -87,7 +84,7 @@ import javax.imageio.ImageIO;
 
         JTextField txtUser = styledTextField("Usuario");
         txtUser.setBounds(50, 150, 300, 40);
-        
+
         JPasswordField txtPass = styledPasswordField("Contraseña");
         txtPass.setBounds(50, 200, 300, 40);
 
@@ -100,22 +97,24 @@ import javax.imageio.ImageIO;
             try {
                 String u = txtUser.getText();
                 String p = new String(txtPass.getPassword());
-                
-                if(u.isEmpty() || p.isEmpty()) throw new EmptyFieldException("Llena todos los campos");
 
-                loggedUser = userManager.login(u, p); 
+                if (u.isEmpty() || p.isEmpty()) {
+                    throw new EmptyFieldException("Llena todos los campos");
+                }
+
+                loggedUser = userManager.login(u, p);
                 JOptionPane.showMessageDialog(this, "Bienvenido " + loggedUser.getNombre(), "Login Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                
+
                 txtUser.setText("");
                 txtPass.setText("");
-                
+
                 cardLayout.show(mainPanel, "MAIN");
 
             } catch (InvalidCredentialsException | EmptyFieldException ex) {
-                int opt = JOptionPane.showConfirmDialog(this, 
-                    ex.getMessage() + "\n¿Deseas intentar de nuevo (Yes) o Crear cuenta (No)?", 
-                    "Error de Login", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
-                
+                int opt = JOptionPane.showConfirmDialog(this,
+                        ex.getMessage() + "\n¿Deseas intentar de nuevo (Yes) o Crear cuenta (No)?",
+                        "Error de Login", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
+
                 if (opt == JOptionPane.NO_OPTION) {
                     cardLayout.show(mainPanel, "REGISTER");
                 }
@@ -144,13 +143,13 @@ import javax.imageio.ImageIO;
     private JPanel crearPanelRegistro() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(BG_COLOR);
-        
-        JPanel registerCard = new JPanel(null); 
-        registerCard.setPreferredSize(new Dimension(400, 600)); 
+
+        JPanel registerCard = new JPanel(null);
+        registerCard.setPreferredSize(new Dimension(400, 600));
         registerCard.setBackground(BG_COLOR);
         registerCard.setBorder(new LineBorder(BORDER_COLOR, 1));
-        
-        final String[] photoPath = {""}; 
+
+        final String[] photoPath = {""};
 
         JLabel title = new JLabel("Crear Cuenta", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -160,7 +159,7 @@ import javax.imageio.ImageIO;
 
         JTextField txtNombre = styledTextField("Nombre Completo");
         txtNombre.setBounds(50, 80, 300, 35);
-        
+
         JTextField txtUser = styledTextField("Username (Único)");
         txtUser.setBounds(50, 125, 300, 35);
 
@@ -172,79 +171,92 @@ import javax.imageio.ImageIO;
 
         JRadioButton rbM = new JRadioButton("M");
         JRadioButton rbF = new JRadioButton("F");
-        styleRadioButton(rbM); styleRadioButton(rbF);
-        ButtonGroup bg = new ButtonGroup(); bg.add(rbM); bg.add(rbF);
-        
+        styleRadioButton(rbM);
+        styleRadioButton(rbF);
+        ButtonGroup bg = new ButtonGroup();
+        bg.add(rbM);
+        bg.add(rbF);
+
         JPanel genderPanel = new JPanel();
         genderPanel.setBackground(BG_COLOR);
         genderPanel.setBorder(BorderFactory.createTitledBorder(new LineBorder(Color.GRAY), "Género", 0, 0, null, Color.GRAY));
         genderPanel.setBounds(210, 215, 140, 45);
-        genderPanel.add(rbM); genderPanel.add(rbF);
+        genderPanel.add(rbM);
+        genderPanel.add(rbF);
         registerCard.add(genderPanel);
 
         JButton btnPhoto = new JButton("Seleccionar Foto de Perfil...");
         btnPhoto.setBackground(INPUT_BG);
         btnPhoto.setForeground(Color.WHITE);
         btnPhoto.setBounds(50, 280, 300, 30);
-        
+
         btnPhoto.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes JPG & PNG", "jpg", "png", "jpeg");
             fileChooser.setFileFilter(filter);
-            
+
             int returnValue = fileChooser.showOpenDialog(null);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 photoPath[0] = selectedFile.getAbsolutePath();
-                btnPhoto.setText(selectedFile.getName()); 
-                btnPhoto.setForeground(BTN_BLUE); 
+                btnPhoto.setText(selectedFile.getName());
+                btnPhoto.setForeground(BTN_BLUE);
             }
         });
-        
+
         registerCard.add(btnPhoto);
-        registerCard.add(txtNombre); 
-        registerCard.add(txtUser); 
-        registerCard.add(txtPass); 
+        registerCard.add(txtNombre);
+        registerCard.add(txtUser);
+        registerCard.add(txtPass);
         registerCard.add(txtEdad);
 
         JButton btnRegister = styledButton("Registrarte");
         btnRegister.setBounds(50, 330, 300, 40);
         btnRegister.addActionListener(e -> {
             try {
-                if (txtNombre.getText().isEmpty() || txtUser.getText().isEmpty() || 
-                    new String(txtPass.getPassword()).isEmpty() || txtEdad.getText().isEmpty()) {
+                if (txtNombre.getText().isEmpty() || txtUser.getText().isEmpty()
+                        || new String(txtPass.getPassword()).isEmpty() || txtEdad.getText().isEmpty()) {
                     throw new EmptyFieldException("Todos los campos son obligatorios.");
                 }
 
                 int edad = Integer.parseInt(txtEdad.getText());
                 char genero = rbM.isSelected() ? 'M' : (rbF.isSelected() ? 'F' : ' ');
-                if (genero == ' ') throw new EmptyFieldException("Selecciona un género.");
-                
+                if (genero == ' ') {
+                    throw new EmptyFieldException("Selecciona un género.");
+                }
+
                 String finalPath = photoPath[0];
                 if (finalPath.isEmpty()) {
                     int confirm = JOptionPane.showConfirmDialog(this, "No seleccionaste foto. ¿Continuar sin foto?", "Advertencia", JOptionPane.YES_NO_OPTION);
-                    if (confirm != JOptionPane.YES_OPTION) return;
+                    if (confirm != JOptionPane.YES_OPTION) {
+                        return;
+                    }
                     finalPath = "default_user.png";
                 }
 
                 User newUser = new User(
-                    txtNombre.getText(), 
-                    genero, 
-                    txtUser.getText(), 
-                    new String(txtPass.getPassword()), 
-                    edad, 
-                    finalPath
+                        txtNombre.getText(),
+                        genero,
+                        txtUser.getText(),
+                        new String(txtPass.getPassword()),
+                        edad,
+                        finalPath
                 );
 
                 userManager.registrarUsuario(newUser);
-                loggedUser = newUser; 
-                
+                loggedUser = newUser;
+
                 JOptionPane.showMessageDialog(this, "¡Cuenta creada exitosamente! Redirigiendo...", "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
-                
-                txtNombre.setText(""); txtUser.setText(""); txtPass.setText(""); txtEdad.setText(""); 
-                photoPath[0] = ""; btnPhoto.setText("Seleccionar Foto de Perfil..."); btnPhoto.setForeground(Color.WHITE);
+
+                txtNombre.setText("");
+                txtUser.setText("");
+                txtPass.setText("");
+                txtEdad.setText("");
+                photoPath[0] = "";
+                btnPhoto.setText("Seleccionar Foto de Perfil...");
+                btnPhoto.setForeground(Color.WHITE);
                 bg.clearSelection();
-                
+
                 cardLayout.show(mainPanel, "MAIN");
 
             } catch (NumberFormatException nfe) {
@@ -276,44 +288,43 @@ import javax.imageio.ImageIO;
 
         JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
         contentAreaWrapper.setBackground(BG_COLOR);
-        
+
         JPanel feedContent = new JPanel();
         feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
         feedContent.setBackground(BG_COLOR);
-        
-        int feedWidth = 550; 
-        feedContent.setPreferredSize(new Dimension(feedWidth, 600)); 
+
+        int feedWidth = 550;
+        feedContent.setPreferredSize(new Dimension(feedWidth, 600));
         feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
-        
+
         // Mensaje de feed vacío 
-        JLabel emptyMessage = new JLabel("<html><div style='text-align: center; width: " + (feedWidth-50) + "px;'><b>¡Bienvenido!</b><br>Sigue a tus amigos para ver publicaciones.</div></html>", SwingConstants.CENTER);
+        JLabel emptyMessage = new JLabel("<html><div style='text-align: center; width: " + (feedWidth - 50) + "px;'><b>¡Bienvenido!</b><br>Sigue a tus amigos para ver publicaciones.</div></html>", SwingConstants.CENTER);
         emptyMessage.setForeground(Color.GRAY);
         emptyMessage.setFont(new Font("SansSerif", Font.BOLD, 14));
         emptyMessage.setBorder(new EmptyBorder(50, 0, 0, 0));
         emptyMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
+
         feedContent.add(emptyMessage);
-        
 
         JScrollPane scrollPane = new JScrollPane(feedContent);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.weightx = 1.0; 
+        gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.VERTICAL;
-        
+
         contentAreaWrapper.add(scrollPane, gbc);
 
         panel.add(contentAreaWrapper, BorderLayout.CENTER);
 
         return panel;
     }
-    
+
     // --- PANEL CREAR POST (NUEVO) ---
     private JPanel crearPanelCrearPost() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -351,7 +362,7 @@ import javax.imageio.ImageIO;
         txtCaption.setWrapStyleWord(true);
         JScrollPane captionScroll = new JScrollPane(txtCaption);
         captionScroll.setBorder(BorderFactory.createTitledBorder(
-            new LineBorder(BORDER_COLOR), "Escribe la descripción...", 0, 0, null, Color.GRAY));
+                new LineBorder(BORDER_COLOR), "Escribe la descripción...", 0, 0, null, Color.GRAY));
         captionScroll.setMaximumSize(new Dimension(460, 150));
         captionScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         postForm.add(captionScroll);
@@ -384,13 +395,13 @@ import javax.imageio.ImageIO;
         postForm.add(btnSelectImage);
         postForm.add(Box.createVerticalStrut(5));
         postForm.add(lblImageStatus);
-        postForm.add(Box.createVerticalGlue()); 
+        postForm.add(Box.createVerticalGlue());
 
         // Botón Publicar
         JButton btnPost = styledButton("Publicar");
         btnPost.setMaximumSize(new Dimension(460, 40));
         btnPost.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnPost.setBackground(new Color(255, 105, 180)); 
+        btnPost.setBackground(new Color(255, 105, 180));
 
         btnPost.addActionListener(e -> {
             try {
@@ -404,9 +415,9 @@ import javax.imageio.ImageIO;
                     throw new EmptyFieldException("Debes seleccionar una imagen para la publicación.");
                 }
                 if (caption.isEmpty()) {
-                    caption = ""; 
+                    caption = "";
                 }
-                
+
                 // Recargar el usuario logueado para tener la instancia correcta del manager
                 User userToUpdate = userManager.getUserByUsername(loggedUser.getUsername());
                 if (userToUpdate == null) {
@@ -446,22 +457,21 @@ import javax.imageio.ImageIO;
         return panel;
     }
 
-
     // --- PANEL DE BÚSQUEDA Y VISUALIZACIÓN DE PERFIL (EXISTENTE) ---
     private JPanel crearPanelProfileSearch() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG_COLOR);
-        panel.add(crearSidebarDesktop(), BorderLayout.WEST); 
+        panel.add(crearSidebarDesktop(), BorderLayout.WEST);
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(BG_COLOR);
-        
+
         profileCardContainer = new JPanel(new CardLayout());
-        profileCardContainer.setPreferredSize(new Dimension(600, 650)); 
+        profileCardContainer.setPreferredSize(new Dimension(600, 650));
         profileCardContainer.setBackground(BG_COLOR);
 
         profileCardContainer.add(crearProfileCardSearch(), "SEARCH_INPUT");
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.CENTER;
         centerPanel.add(profileCardContainer, gbc);
@@ -469,27 +479,27 @@ import javax.imageio.ImageIO;
         panel.add(centerPanel, BorderLayout.CENTER);
         return panel;
     }
-    
+
     // Tarjeta inicial para la búsqueda de perfiles (EXISTENTE)
     private JPanel crearProfileCardSearch() {
         JPanel searchPanel = new JPanel(new GridBagLayout());
         searchPanel.setBackground(BG_COLOR);
         searchPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
-        
+
         JPanel inputPanel = new JPanel();
         inputPanel.setBackground(BG_COLOR);
         inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
-        
+
         JLabel title = new JLabel("Buscar Perfil", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         title.setForeground(TEXT_COLOR);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
         title.setBorder(new EmptyBorder(0, 0, 20, 0));
-        
+
         JTextField txtSearchUser = styledTextField("Username a buscar");
         txtSearchUser.setMaximumSize(new Dimension(300, 40));
         txtSearchUser.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
+
         JButton btnSearch = styledButton("Buscar");
         btnSearch.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnSearch.setMaximumSize(new Dimension(300, 40));
@@ -501,9 +511,9 @@ import javax.imageio.ImageIO;
                 JOptionPane.showMessageDialog(this, "Ingresa un nombre de usuario.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
+
             User targetUser = userManager.getUserByUsername(targetUsername);
-            
+
             if (targetUser != null) {
                 mostrarPerfil(targetUser);
                 txtSearchUser.setText(""); // Limpiar el campo
@@ -511,49 +521,50 @@ import javax.imageio.ImageIO;
                 JOptionPane.showMessageDialog(this, "Usuario no encontrado: " + targetUsername, "Búsqueda Fallida", JOptionPane.WARNING_MESSAGE);
             }
         });
-        
+
         inputPanel.add(title);
         inputPanel.add(txtSearchUser);
         inputPanel.add(Box.createVerticalStrut(15));
         inputPanel.add(btnSearch);
-        
+
         searchPanel.add(inputPanel);
         return searchPanel;
     }
-    
+
     /**
      * Muestra el perfil del usuario objetivo dinámicamente. (EXISTENTE)
      */
     private void mostrarPerfil(User targetUser) {
         // Eliminar vistas anteriores y añadir la nueva
         profileCardContainer.removeAll();
-        
+
         // **IMPORTANTE**: Recargar el targetUser para asegurar que los contadores (followers) estén actualizados
         User refreshedTargetUser = userManager.getUserByUsername(targetUser.getUsername());
         if (refreshedTargetUser == null) {
             JOptionPane.showMessageDialog(this, "Error al cargar el perfil.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         JPanel profileView = buildProfileView(refreshedTargetUser);
         profileCardContainer.add(profileView, "PROFILE_VIEW");
-        
+
         CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
         cl.show(profileCardContainer, "PROFILE_VIEW");
-        
+
         profileCardContainer.revalidate();
         profileCardContainer.repaint();
     }
-    
+
     /**
-     * Construye la vista completa de un perfil (similar al diseño de Instagram). (EXISTENTE)
+     * Construye la vista completa de un perfil (similar al diseño de
+     * Instagram). (EXISTENTE)
      */
     private JPanel buildProfileView(User targetUser) {
         JPanel profilePanel = new JPanel(new BorderLayout());
         profilePanel.setBackground(BG_COLOR);
         profilePanel.setBorder(new LineBorder(BORDER_COLOR, 1));
 
-        JPanel headerPanel = new JPanel(new BorderLayout(20, 0)); 
+        JPanel headerPanel = new JPanel(new BorderLayout(20, 0));
         headerPanel.setBackground(BG_COLOR);
         headerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -588,7 +599,7 @@ import javax.imageio.ImageIO;
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(BG_COLOR);
         infoPanel.setAlignmentY(Component.TOP_ALIGNMENT);
-        infoPanel.setBorder(new EmptyBorder(0, 0, 0, 0)); 
+        infoPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         JLabel lblUsername = new JLabel(targetUser.getUsername() + " ✅");
         lblUsername.setFont(new Font("SansSerif", Font.BOLD, 22));
@@ -606,16 +617,16 @@ import javax.imageio.ImageIO;
 
         // Posts
         statsPanel.add(createStatPanel(String.valueOf(targetUser.getPosts().size()), "publicaciones"));
-        statsPanel.add(Box.createHorizontalStrut(30)); 
+        statsPanel.add(Box.createHorizontalStrut(30));
         // Followers
         statsPanel.add(createStatPanel(String.valueOf(targetUser.getFollowers().size()), "seguidores"));
-        statsPanel.add(Box.createHorizontalStrut(30)); 
+        statsPanel.add(Box.createHorizontalStrut(30));
         // Followings
         statsPanel.add(createStatPanel(String.valueOf(targetUser.getFollowings().size()), "seguidos"));
-        
+
         infoPanel.add(statsPanel);
-        infoPanel.add(Box.createVerticalStrut(10)); 
-        
+        infoPanel.add(Box.createVerticalStrut(10));
+
         // Datos Personales
         infoPanel.add(createDetailLabel("Nombre: " + targetUser.getNombre()));
         infoPanel.add(createDetailLabel("Género: " + targetUser.getGenero()));
@@ -627,39 +638,39 @@ import javax.imageio.ImageIO;
         actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
         actionPanel.setBackground(BG_COLOR);
         actionPanel.setAlignmentY(Component.TOP_ALIGNMENT);
-        
+
         // Lógica de SEGUIR/DEJAR DE SEGUIR
         if (loggedUser != null && !targetUser.getUsername().equals(loggedUser.getUsername())) {
             boolean isFollowing = loggedUser.isFollowing(targetUser.getUsername());
-            
+
             JButton btnFollowToggle = styledButton(isFollowing ? "Siguiendo" : "Seguir");
             btnFollowToggle.setPreferredSize(new Dimension(180, 30));
             btnFollowToggle.setMinimumSize(new Dimension(180, 30));
             btnFollowToggle.setMaximumSize(new Dimension(180, 30));
             btnFollowToggle.setAlignmentX(Component.LEFT_ALIGNMENT);
-            
+
             if (isFollowing) {
-                btnFollowToggle.setBackground(new Color(54, 54, 54)); 
-                btnFollowToggle.setText("Siguiendo"); 
+                btnFollowToggle.setBackground(new Color(54, 54, 54));
+                btnFollowToggle.setText("Siguiendo");
             } else {
-                btnFollowToggle.setBackground(BTN_BLUE); 
-                btnFollowToggle.setText("Seguir"); 
+                btnFollowToggle.setBackground(BTN_BLUE);
+                btnFollowToggle.setText("Seguir");
             }
 
             btnFollowToggle.addActionListener(e -> {
                 userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
-                
+
                 // CORRECCIÓN: Volver a cargar el usuario logueado para que su lista 'followings' esté actualizada
                 User updatedLoggedUser = userManager.getUserByUsername(loggedUser.getUsername());
                 if (updatedLoggedUser != null) {
-                    loggedUser = updatedLoggedUser; 
+                    loggedUser = updatedLoggedUser;
                 }
-                
+
                 // Recargar el perfil para actualizar los contadores y el estado del botón
-                mostrarPerfil(targetUser); 
+                mostrarPerfil(targetUser);
             });
             actionPanel.add(btnFollowToggle);
-            actionPanel.add(Box.createVerticalStrut(10)); 
+            actionPanel.add(Box.createVerticalStrut(10));
         } else if (loggedUser != null && targetUser.getUsername().equals(loggedUser.getUsername())) {
             // Es el perfil propio
             JLabel lblOwnProfile = new JLabel("Este es tu perfil");
@@ -668,13 +679,12 @@ import javax.imageio.ImageIO;
             actionPanel.add(lblOwnProfile);
             actionPanel.add(Box.createVerticalStrut(10));
         }
-        
 
         // Ensamblar Header
         headerPanel.add(lblPhoto, BorderLayout.WEST);
         headerPanel.add(infoPanel, BorderLayout.CENTER);
         headerPanel.add(actionPanel, BorderLayout.EAST);
-        
+
         profilePanel.add(headerPanel, BorderLayout.NORTH);
 
         // 2. TABS Y GRID DE POSTS (CENTER)
@@ -682,23 +692,23 @@ import javax.imageio.ImageIO;
         contentPanel.setBackground(BG_COLOR);
 
         // 2.1. Tab Bar Simulation 
-        JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10)); 
+        JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
         tabBar.setBackground(BG_COLOR);
-        tabBar.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, BORDER_COLOR)); 
+        tabBar.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, BORDER_COLOR));
         tabBar.setPreferredSize(new Dimension(profilePanel.getWidth(), 50));
 
-        tabBar.add(createTabIcon("◼️ Posts", "Posts")); 
+        tabBar.add(createTabIcon("◼️ Posts", "Posts"));
 
         contentPanel.add(tabBar, BorderLayout.NORTH);
 
         // 2.2. Posts Grid 
         JPanel gridWrapper = new JPanel(new GridBagLayout());
         gridWrapper.setBackground(BG_COLOR);
-        
-        JPanel postsGrid = new JPanel(new GridLayout(0, 3, 5, 5)); 
+
+        JPanel postsGrid = new JPanel(new GridLayout(0, 3, 5, 5));
         postsGrid.setBackground(BG_COLOR);
         postsGrid.setBorder(new EmptyBorder(10, 5, 10, 5));
-        
+
         if (targetUser.getPosts().isEmpty()) {
             JLabel noPosts = new JLabel("Este usuario aún no tiene publicaciones.", SwingConstants.CENTER);
             noPosts.setForeground(Color.GRAY);
@@ -720,41 +730,41 @@ import javax.imageio.ImageIO;
             gbc.weighty = 1.0;
             gridWrapper.add(scrollPane, gbc);
         }
-        
+
         contentPanel.add(gridWrapper, BorderLayout.CENTER);
         profilePanel.add(contentPanel, BorderLayout.CENTER);
-        
+
         return profilePanel;
     }
-    
+
     // Crea una miniatura de post (cuadrado) para la cuadrícula del perfil (EXISTENTE)
     private JPanel crearPostMiniatura(Post post) {
         JPanel miniatura = new JPanel(new BorderLayout());
         miniatura.setPreferredSize(new Dimension(150, 150));
         miniatura.setBackground(INPUT_BG);
         miniatura.setBorder(new LineBorder(BORDER_COLOR, 1));
-        
+
         JLabel lblImage = new JLabel("Post: " + post.getCaption().substring(0, Math.min(post.getCaption().length(), 15)) + "...", SwingConstants.CENTER);
         lblImage.setForeground(Color.GRAY);
-        
+
         miniatura.add(lblImage, BorderLayout.CENTER);
-        
+
         miniatura.setCursor(new Cursor(Cursor.HAND_CURSOR));
         miniatura.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 JOptionPane.showMessageDialog(null, "Ver Post Completo: " + post.getCaption(), "Post", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        
+
         return miniatura;
     }
-    
+
     // --- SIDEBAR DESKTOP (NAVIGATION) (COMPLETADO) ---
     private JPanel crearSidebarDesktop() {
         JPanel sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(BG_COLOR);
-        sidebar.setPreferredSize(new Dimension(220, getHeight())); 
-        sidebar.setBorder(new LineBorder(BORDER_COLOR, 1)); 
+        sidebar.setPreferredSize(new Dimension(220, getHeight()));
+        sidebar.setBorder(new LineBorder(BORDER_COLOR, 1));
 
         // 1. Logo (NORTH)
         JLabel title = new JLabel("Instagram", SwingConstants.LEFT);
@@ -765,26 +775,25 @@ import javax.imageio.ImageIO;
 
         // 2. Navigation Links (CENTER)
         JPanel navLinks = new JPanel();
-        navLinks.setLayout(new BoxLayout(navLinks, BoxLayout.Y_AXIS)); 
+        navLinks.setLayout(new BoxLayout(navLinks, BoxLayout.Y_AXIS));
         navLinks.setBackground(BG_COLOR);
         navLinks.setBorder(new EmptyBorder(10, 15, 10, 15));
 
         // Botones de navegación (COMPLETADOS)
         navLinks.add(createSidebarButton("🏠 Inicio", "MAIN"));
         navLinks.add(createSidebarButton("🔍 Búsqueda", "PROFILE_SEARCH"));
-        navLinks.add(createSidebarButton("✨ Crear", "CREATE_POST")); 
-        navLinks.add(createSidebarButton("👤 Perfil", "MY_PROFILE")); 
-        
+        navLinks.add(createSidebarButton("✨ Crear", "CREATE_POST"));
+        navLinks.add(createSidebarButton("👤 Perfil", "MY_PROFILE"));
+
         navLinks.add(Box.createVerticalGlue()); // Empuja el resto hacia abajo
-        
+
         navLinks.add(createSidebarButton("🚪 Salir", "LOGOUT")); // Botón de Logout
 
         sidebar.add(navLinks, BorderLayout.CENTER);
         return sidebar;
     }
-    
+
     // --- MÉTODOS HELPER ---
-    
     // Helper para botones de la Sidebar (COMPLETADO con lógica de navegación)
     private JButton createSidebarButton(String text, String cardName) {
         JButton btn = new JButton(text);
@@ -803,7 +812,7 @@ import javax.imageio.ImageIO;
             if (cardName.equals("LOGOUT")) {
                 int opt = JOptionPane.showConfirmDialog(this, "¿Cerrar sesión?", "Confirmar Salida", JOptionPane.YES_NO_OPTION);
                 if (opt == JOptionPane.YES_OPTION) {
-                    loggedUser = null; 
+                    loggedUser = null;
                     cardLayout.show(mainPanel, "LOGIN");
                 }
             } else if (cardName.equals("MY_PROFILE")) {
@@ -847,29 +856,29 @@ import javax.imageio.ImageIO;
         lbl.setBorder(new EmptyBorder(2, 0, 2, 0));
         return lbl;
     }
-    
+
     // Helper para crear etiquetas de estadísticas de perfil (EXISTENTE)
     private JPanel createStatPanel(String count, String label) {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         p.setBackground(BG_COLOR);
         p.setAlignmentY(Component.TOP_ALIGNMENT);
-        
+
         JLabel lblCount = new JLabel(count, SwingConstants.CENTER);
         lblCount.setFont(new Font("SansSerif", Font.BOLD, 16));
         lblCount.setForeground(TEXT_COLOR);
         lblCount.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
+
         JLabel lblLabel = new JLabel(label, SwingConstants.CENTER);
         lblLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lblLabel.setForeground(Color.GRAY);
         lblLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
+
         p.add(lblCount);
         p.add(lblLabel);
         return p;
     }
-    
+
     // Helper para crear iconos de pestaña (EXISTENTE)
     private JLabel createTabIcon(String icon, String tooltip) {
         JLabel lbl = new JLabel(icon, SwingConstants.CENTER);
@@ -877,12 +886,11 @@ import javax.imageio.ImageIO;
         lbl.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lbl.setToolTipText(tooltip);
         lbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, TEXT_COLOR)); 
+        lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, TEXT_COLOR));
         return lbl;
     }
-    
+
     // --- ESTILOS COMPARTIDOS (INCLUIDOS PARA COMPLETAR EL CÓDIGO) ---
-    
     private JTextField styledTextField(String placeholder) {
         JTextField field = new JTextField();
         field.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -891,10 +899,10 @@ import javax.imageio.ImageIO;
         field.setCaretColor(TEXT_COLOR);
         field.setText(placeholder);
         field.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1), 
-            new EmptyBorder(10, 10, 10, 10)
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 10, 10, 10)
         ));
-        
+
         field.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -923,12 +931,12 @@ import javax.imageio.ImageIO;
         field.setCaretColor(TEXT_COLOR);
         field.setText(placeholder);
         field.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1), 
-            new EmptyBorder(10, 10, 10, 10)
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 10, 10, 10)
         ));
-        
+
         field.setEchoChar((char) 0); // Mostrar placeholder
-        
+
         field.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -962,7 +970,7 @@ import javax.imageio.ImageIO;
         btn.setBorder(new EmptyBorder(10, 10, 10, 10)); // Más padding
         return btn;
     }
-    
+
     private JButton createLinkButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -974,7 +982,7 @@ import javax.imageio.ImageIO;
         btn.setFocusPainted(false);
         return btn;
     }
-    
+
     private void styleRadioButton(JRadioButton rb) {
         rb.setBackground(BG_COLOR);
         rb.setForeground(TEXT_COLOR);
