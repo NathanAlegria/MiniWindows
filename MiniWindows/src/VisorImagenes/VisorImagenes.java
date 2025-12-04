@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-
 package VisorImagenes;
 
 import miniwindows.User;
@@ -20,7 +19,6 @@ import java.util.List;
  *
  * @author Nathan
  */
-
 public class VisorImagenes extends JPanel {
 
     private final User currentUser;
@@ -89,28 +87,46 @@ public class VisorImagenes extends JPanel {
         }
 
         ImageIcon icon = new ImageIcon(images.get(currentIndex).getAbsolutePath());
+
         if (icon.getIconWidth() <= 0 || icon.getIconHeight() <= 0) {
             imageLabel.setIcon(null);
             imageLabel.setText("No se puede mostrar la imagen");
             return;
         }
-        Image scaled = icon.getImage().getScaledInstance(
-                imageLabel.getWidth(), imageLabel.getHeight(), Image.SCALE_SMOOTH);
+
+        int w = imageLabel.getWidth();
+        int h = imageLabel.getHeight();
+
+        if (w == 0 || h == 0) {
+            Dimension pref = imageLabel.getPreferredSize();
+            w = pref.width;
+            h = pref.height;
+        }
+ 
+        Image scaled = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
         imageLabel.setIcon(new ImageIcon(scaled));
         imageLabel.setText(null);
     }
 
     private void showPreviousImage(ActionEvent e) {
-        if (images.isEmpty()) return;
+        if (images.isEmpty()) {
+            return;
+        }
         currentIndex--;
-        if (currentIndex < 0) currentIndex = images.size() - 1;
+        if (currentIndex < 0) {
+            currentIndex = images.size() - 1;
+        }
         updateImage();
     }
 
     private void showNextImage(ActionEvent e) {
-        if (images.isEmpty()) return;
+        if (images.isEmpty()) {
+            return;
+        }
         currentIndex++;
-        if (currentIndex >= images.size()) currentIndex = 0;
+        if (currentIndex >= images.size()) {
+            currentIndex = 0;
+        }
         updateImage();
     }
 
@@ -150,4 +166,3 @@ public class VisorImagenes extends JPanel {
         }
     }
 }
-
