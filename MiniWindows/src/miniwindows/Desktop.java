@@ -6,6 +6,7 @@ package miniwindows;
 
 import CMD.CMD_GUI;
 import EditordeTexto.EditorTexto;
+import VisorImagenes.VisorImagenes;
 import reproductor.ReproductorGUI;
 
 import javax.swing.*;
@@ -31,7 +32,8 @@ public class Desktop extends JFrame {
         {"Archivos", "🗂️"},
         {"Reproductor Musical", "🎵"},
         {"Texto", "📝"},
-        {"Consola", "🚀"}
+        {"Consola", "🚀"},
+        {"Visor de Imágenes", "🖼️"} // <-- agregado para que aparezca en Start / búsqueda / grid
     };
 
     private final User currentUser;
@@ -88,6 +90,9 @@ public class Desktop extends JFrame {
         iconPanel.add(createDesktopIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         iconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
         iconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
+
+        // <-- Icono del Visor agregado al escritorio
+        iconPanel.add(createDesktopIcon("🖼️", "Visor de Imágenes", e -> launchImageViewer()));
 
         contentPanel.add(iconPanel, BorderLayout.NORTH);
         this.desktopIconPanel = iconPanel;
@@ -148,11 +153,12 @@ public class Desktop extends JFrame {
         });
         leftPanel.add(searchBar);
 
-        // Botones de apps rápidas
+        // Botones de apps rápidas (añadí Visor aquí)
         leftPanel.add(createTaskbarIcon("🗂️", "Archivos", e -> launchFileExplorer()));
         leftPanel.add(createTaskbarIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         leftPanel.add(createTaskbarIcon("📝", "Texto", e -> launchTextEditor()));
         leftPanel.add(createTaskbarIcon("🚀", "Consola", e -> launchConsole()));
+        leftPanel.add(createTaskbarIcon("🖼️", "Visor", e -> launchImageViewer())); // <-- nuevo
 
         // Panel de apps (ventanas abiertas)
         leftPanel.add(taskbarAppPanel);
@@ -329,6 +335,8 @@ public class Desktop extends JFrame {
                 launchTextEditor();
             case "Consola" ->
                 launchConsole();
+            case "Visor de Imágenes" ->               // <-- CASE agregado
+                launchImageViewer();
             default ->
                 JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
         }
@@ -373,6 +381,33 @@ public class Desktop extends JFrame {
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "No se pudo abrir la consola: " + e.toString());
+        }
+    }
+
+    private void launchImageViewer() {
+        try {
+            String rutaImagenes = Z_ROOT_PATH + currentUser.getUsername() + File.separator + "Imagenes";
+            // Si la carpeta de imágenes no existe en Z_ROOT_PATH/usuario/Imagenes, la intentamos crear
+            File f = new File(rutaImagenes);
+            if (!f.exists()) {
+                f.mkdirs();
+            }
+
+            VisorImagenes visor = new VisorImagenes(currentUser);
+
+            JInternalFrame imgFrame = new JInternalFrame(
+                    "Visor de Imágenes", true, true, true, true
+            );
+            imgFrame.setSize(900, 600);
+            imgFrame.setLayout(new BorderLayout());
+            imgFrame.add(visor, BorderLayout.CENTER);
+            imgFrame.setVisible(true);
+
+            addInternalFrame(imgFrame, "Visor de Imágenes"); // <-- título coherente
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al abrir Visor de Imágenes: " + e.getMessage());
         }
     }
 
@@ -476,3 +511,4 @@ public class Desktop extends JFrame {
         }
     }
 }
+

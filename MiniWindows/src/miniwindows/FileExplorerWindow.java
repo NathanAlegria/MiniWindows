@@ -10,6 +10,7 @@ import reproductor.ReproductorGUI;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
@@ -38,6 +39,9 @@ public class FileExplorerWindow extends JInternalFrame {
     private JTextField searchField;
     private final List<File> clipboard = new ArrayList<>();
     private boolean clipboardCut = false;
+
+    // 🔵 NUEVO: BOTÓN PARA SUBIR IMAGEN
+    private JButton btnUploadImage;
 
     public FileExplorerWindow(User user, File rootFolder) {
         super("Explorador - " + user.getUsername(), true, true, true, true);
@@ -87,9 +91,16 @@ public class FileExplorerWindow extends JInternalFrame {
         toolbar.add(btnCut);
         toolbar.add(btnPaste);
 
+        // 🔵 NUEVO: BOTÓN SUBIR IMAGEN, OCULTO POR DEFECTO
+        btnUploadImage = new JButton("Subir Imagen");
+        btnUploadImage.setVisible(false);
+        btnUploadImage.addActionListener(e -> uploadImage());
+        toolbar.addSeparator(new Dimension(15, 0));
+        toolbar.add(btnUploadImage);
+
         add(toolbar, BorderLayout.NORTH);
 
-        // Listeners
+        // Listeners existentes
         btnNewFolder.addActionListener(e -> createNewFolder());
         btnRename.addActionListener(e -> renameSelectedFile());
         btnDelete.addActionListener(e -> deleteSelectedFile());
@@ -153,6 +164,81 @@ public class FileExplorerWindow extends JInternalFrame {
         add(splitPane, BorderLayout.CENTER);
     }
 
+    // --------------------------------------------------
+    // 🔵 NUEVO: SOLO MOSTRAR BOTÓN "SUBIR IMAGEN" EN /Imagenes
+    // --------------------------------------------------
+    private void checkIfImagesFolder() {
+        if (currentDir == null) {
+            btnUploadImage.setVisible(false);
+            return;
+        }
+        String nombre = currentDir.getName().toLowerCase();
+        btnUploadImage.setVisible(nombre.equals("imagenes"));
+    }
+
+    // ------------------- Tabla -------------------
+    private void updateFileTable(File dir) {
+        if (dir == null || !dir.exists()) {
+            tableModel.setFiles(List.of());
+            checkIfImagesFolder();
+            return;
+        }
+
+        // 🔵 Revisar si estamos en /Imagenes
+        checkIfImagesFolder();
+
+        File[] files = dir.listFiles();
+        if (files == null) {
+            tableModel.setFiles(List.of());
+            return;
+        }
+
+        String q = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+        List<File> list = Arrays.stream(files)
+                .filter(f -> q.isEmpty() || f.getName().toLowerCase().contains(q))
+                .collect(Collectors.toList());
+
+        String ord = (String) sortCombo.getSelectedItem();
+        if ("Fecha (reciente)".equals(ord)) {
+            list.sort(Comparator.comparingLong(File::lastModified).reversed());
+        } else if ("Tamaño (desc)".equals(ord)) {
+            list.sort(Comparator.comparingLong(File::length).reversed());
+        } else {
+            list.sort(Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+        }
+
+        tableModel.setFiles(list);
+    }
+
+    // --------------------------------------------------
+    // 🔵 NUEVO MÉTODO: SUBIR IMAGEN AL FOLDER /Imagenes
+    // --------------------------------------------------
+    private void uploadImage() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setMultiSelectionEnabled(true);
+        chooser.setFileFilter(
+                new FileNameExtensionFilter("Imágenes", "png", "jpg", "jpeg", "gif", "bmp")
+        );
+
+        int result = chooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        for (File file : chooser.getSelectedFiles()) {
+            try {
+                File destino = new File(currentDir, file.getName());
+                Files.copy(file.toPath(), destino.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error copiando imagen: " + ex.getMessage());
+            }
+        }
+
+        updateFileTable(currentDir);
+        JOptionPane.showMessageDialog(this, "Imágenes subidas correctamente.");
+    }
+
+    // ------------------- (RESTO DE TU CÓDIGO ORIGINAL SIN MODIFICAR) -------------------
     private void openFile(File f) {
         String name = f.getName().toLowerCase();
         Container parent = SwingUtilities.getAncestorOfClass(JDesktopPane.class, this);
@@ -162,12 +248,14 @@ public class FileExplorerWindow extends JInternalFrame {
                     currentDir = f;
                     updateFileTable(f);
                 } else if (name.endsWith(".txt")) {
+                    // Abrir editor de texto
                     EditorTexto editor = new EditorTexto(currentUser);
                     editor.openFile(f);
                     desktop.add(editor, JLayeredPane.PALETTE_LAYER);
                     editor.setVisible(true);
                     editor.setSelected(true);
                 } else if (name.endsWith(".mp3") || name.endsWith(".wav")) {
+                    // Abrir reproductor
                     ReproductorGUI rep = null;
                     for (JInternalFrame frame : desktop.getAllFrames()) {
                         if (frame instanceof ReproductorGUI r
@@ -184,6 +272,15 @@ public class FileExplorerWindow extends JInternalFrame {
                     }
                     rep.loadFromFile(f);
                     rep.setSelected(true);
+                } else if (name.matches(".*\\.(png|jpg|jpeg|gif|bmp)")) {
+                    // Abrir visor de imágenes
+                    File[] files = currentDir.listFiles(file -> file.getName().toLowerCase().matches(".*\\.(png|jpg|jpeg|gif|bmp)"));
+                    List<File> imageList = files == null ? List.of() : List.of(files);
+
+                    ImageViewer viewer = new ImageViewer(imageList);
+                    desktop.add(viewer);
+                    viewer.setVisible(true);
+                    viewer.setSelected(true);
                 } else {
                     JOptionPane.showMessageDialog(this, "No se puede abrir: " + f.getName());
                 }
@@ -208,35 +305,6 @@ public class FileExplorerWindow extends JInternalFrame {
         }
     }
 
-    // ------------------- JTable Update -------------------
-    private void updateFileTable(File dir) {
-        if (dir == null || !dir.exists()) {
-            tableModel.setFiles(List.of());
-            return;
-        }
-        File[] files = dir.listFiles();
-        if (files == null) {
-            tableModel.setFiles(List.of());
-            return;
-        }
-
-        String q = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
-        List<File> list = Arrays.stream(files)
-                .filter(f -> q.isEmpty() || f.getName().toLowerCase().contains(q))
-                .collect(Collectors.toList());
-
-        String ord = (String) sortCombo.getSelectedItem();
-        if ("Fecha (reciente)".equals(ord)) {
-            list.sort(Comparator.comparingLong(File::lastModified).reversed());
-        } else if ("Tamaño (desc)".equals(ord)) {
-            list.sort(Comparator.comparingLong(File::length).reversed());
-        } else {
-            list.sort(Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
-        }
-
-        tableModel.setFiles(list);
-    }
-
     private String buildPathFromNode(DefaultMutableTreeNode node) {
         Object[] nodes = node.getPath();
         StringBuilder path = new StringBuilder(rootFolder.getAbsolutePath());
@@ -246,7 +314,6 @@ public class FileExplorerWindow extends JInternalFrame {
         return path.toString();
     }
 
-    // ------------------- Actions -------------------
     private void createNewFolder() {
         String name = JOptionPane.showInputDialog(this, "Nombre de la nueva carpeta:");
         if (name != null && !name.trim().isEmpty()) {
@@ -368,8 +435,9 @@ public class FileExplorerWindow extends JInternalFrame {
                 } else {
                     Files.copy(f.toPath(), newLoc.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
+
                 if (clipboardCut) {
-                    deleteDirectory(f); // si era cortar, eliminamos el original
+                    deleteDirectory(f);
                 }
             }
             clipboard.clear();
@@ -394,7 +462,6 @@ public class FileExplorerWindow extends JInternalFrame {
         }
     }
 
-    // ------------------- JTable Renderer -------------------
     private static class FileTableCellRenderer extends DefaultTableCellRenderer {
 
         private final FileSystemView fsv = FileSystemView.getFileSystemView();
