@@ -33,7 +33,8 @@ public class Desktop extends JFrame {
         {"Reproductor Musical", "🎵"},
         {"Texto", "📝"},
         {"Consola", "🚀"},
-        {"Visor de Imágenes", "🖼️"}
+        {"Visor de Imágenes", "🖼️"},
+        {"Instagram", "📸"}
     };
 
     private final User currentUser;
@@ -85,6 +86,7 @@ public class Desktop extends JFrame {
         iconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
         iconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
         iconPanel.add(createDesktopIcon("🖼️", "Visor de Imágenes", e -> launchImageViewer()));
+        iconPanel.add(createDesktopIcon("📸", "Instagram", e -> launchInstagram()));
 
         contentPanel.add(iconPanel, BorderLayout.NORTH);
         this.desktopIconPanel = iconPanel;
@@ -149,7 +151,8 @@ public class Desktop extends JFrame {
         leftPanel.add(createTaskbarIcon("📝", "Texto", e -> launchTextEditor()));
         leftPanel.add(createTaskbarIcon("🚀", "Consola", e -> launchConsole()));
         leftPanel.add(createTaskbarIcon("🖼️", "Visor", e -> launchImageViewer()));
-    
+        leftPanel.add(createTaskbarIcon("📸", "Instagram", e -> launchInstagram()));
+
         leftPanel.add(taskbarAppPanel);
         taskbar.add(leftPanel, BorderLayout.WEST);
         // Panel derecho: reloj
@@ -321,11 +324,18 @@ public class Desktop extends JFrame {
                 launchTextEditor();
             case "Consola" ->
                 launchConsole();
-            case "Visor de Imágenes" ->  
+            case "Visor de Imágenes" ->
                 launchImageViewer();
+            case "Instagram" ->
+                launchInstagram();
+
             default ->
                 JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
         }
+    }
+
+    private void launchInstagram() {
+        // Aqui va el Insta 
     }
 
     private void launchFileExplorer() {
@@ -489,4 +499,3 @@ public class Desktop extends JFrame {
         }
     }
 }
-
