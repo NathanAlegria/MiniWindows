@@ -33,7 +33,7 @@ public class Desktop extends JFrame {
         {"Reproductor Musical", "🎵"},
         {"Texto", "📝"},
         {"Consola", "🚀"},
-        {"Visor de Imágenes", "🖼️"} // <-- agregado para que aparezca en Start / búsqueda / grid
+        {"Visor de Imágenes", "🖼️"}
     };
 
     private final User currentUser;
@@ -47,7 +47,6 @@ public class Desktop extends JFrame {
     private int cascadeY = 30;
     private final int cascadeStep = 30;
 
-    // Barra de tareas
     private JPanel taskbarAppPanel;
     private Map<JInternalFrame, JButton> frameButtonMap = new HashMap<>();
 
@@ -55,7 +54,6 @@ public class Desktop extends JFrame {
         this.currentUser = user;
         setTitle("Mini-Windows Desktop - Sesión de: " + user.getUsername());
 
-        // ---------------- Pantalla completa ----------------
         setUndecorated(true);
         setResizable(false);
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -63,7 +61,6 @@ public class Desktop extends JFrame {
         setLocation(0, 0);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // ---------------- Desktop Pane ----------------
         desktopPane = new JDesktopPane();
 
         BackgroundPanel background = new BackgroundPanel(BACKGROUND_IMAGE);
@@ -75,14 +72,11 @@ public class Desktop extends JFrame {
         contentPanel.setBounds(0, 0, screen.width, screen.height);
         desktopPane.add(contentPanel, JLayeredPane.DRAG_LAYER);
 
-        // ---------------- Inicializar panel de apps de la barra de tareas ----------------
         taskbarAppPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
         taskbarAppPanel.setOpaque(false);
 
-        // ---------------- Barra de tareas ----------------
         contentPanel.add(createModernTaskbar(), BorderLayout.SOUTH);
 
-        // ---------------- Iconos del escritorio ----------------
         JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
         iconPanel.setOpaque(false);
 
@@ -90,8 +84,6 @@ public class Desktop extends JFrame {
         iconPanel.add(createDesktopIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         iconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
         iconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
-
-        // <-- Icono del Visor agregado al escritorio
         iconPanel.add(createDesktopIcon("🖼️", "Visor de Imágenes", e -> launchImageViewer()));
 
         contentPanel.add(iconPanel, BorderLayout.NORTH);
@@ -101,17 +93,15 @@ public class Desktop extends JFrame {
         startClockTimer();
     }
 
-    // ---------------- Barra de tareas ----------------
+    //Barra de tareas
     private JPanel createModernTaskbar() {
         JPanel taskbar = new JPanel(new BorderLayout());
         taskbar.setBackground(new Color(38, 38, 38));
         taskbar.setPreferredSize(new Dimension(getWidth(), 40));
 
-        // Panel izquierdo: Start, búsqueda, apps rápidas
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         leftPanel.setOpaque(false);
 
-        // Botón Start
         JButton startButton = new JButton("🪟");
         startButton.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
         startButton.setBackground(new Color(0, 120, 215));
@@ -153,18 +143,15 @@ public class Desktop extends JFrame {
         });
         leftPanel.add(searchBar);
 
-        // Botones de apps rápidas (añadí Visor aquí)
+        // Botones de apps rápidas
         leftPanel.add(createTaskbarIcon("🗂️", "Archivos", e -> launchFileExplorer()));
         leftPanel.add(createTaskbarIcon("🎵", "Reproductor", e -> launchMusicPlayer()));
         leftPanel.add(createTaskbarIcon("📝", "Texto", e -> launchTextEditor()));
         leftPanel.add(createTaskbarIcon("🚀", "Consola", e -> launchConsole()));
-        leftPanel.add(createTaskbarIcon("🖼️", "Visor", e -> launchImageViewer())); // <-- nuevo
-
-        // Panel de apps (ventanas abiertas)
+        leftPanel.add(createTaskbarIcon("🖼️", "Visor", e -> launchImageViewer()));
+    
         leftPanel.add(taskbarAppPanel);
-
         taskbar.add(leftPanel, BorderLayout.WEST);
-
         // Panel derecho: reloj
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         rightPanel.setOpaque(false);
@@ -324,7 +311,6 @@ public class Desktop extends JFrame {
         clockTimer.start();
     }
 
-    // ---------------- Métodos para abrir apps ----------------
     private void openAppByName(String appName) {
         switch (appName) {
             case "Archivos" ->
@@ -335,7 +321,7 @@ public class Desktop extends JFrame {
                 launchTextEditor();
             case "Consola" ->
                 launchConsole();
-            case "Visor de Imágenes" ->               // <-- CASE agregado
+            case "Visor de Imágenes" ->  
                 launchImageViewer();
             default ->
                 JOptionPane.showMessageDialog(this, "Aplicación no encontrada: " + appName);
@@ -368,11 +354,11 @@ public class Desktop extends JFrame {
 
     private void launchConsole() {
         try {
-            CMD_GUI cmd = new CMD_GUI(); // Ahora es un JPanel, ¡correcto!
+            CMD_GUI cmd = new CMD_GUI();
             JInternalFrame cmdFrame = new JInternalFrame("Consola", true, true, true, true);
             cmdFrame.setSize(800, 500);
             cmdFrame.setLayout(new BorderLayout());
-            cmdFrame.add(cmd, BorderLayout.CENTER); // ¡Ahora funciona!
+            cmdFrame.add(cmd, BorderLayout.CENTER);
             cmdFrame.setVisible(true);
 
             addInternalFrame(cmdFrame, "Consola");
@@ -387,7 +373,6 @@ public class Desktop extends JFrame {
     private void launchImageViewer() {
         try {
             String rutaImagenes = Z_ROOT_PATH + currentUser.getUsername() + File.separator + "Imagenes";
-            // Si la carpeta de imágenes no existe en Z_ROOT_PATH/usuario/Imagenes, la intentamos crear
             File f = new File(rutaImagenes);
             if (!f.exists()) {
                 f.mkdirs();
@@ -403,7 +388,7 @@ public class Desktop extends JFrame {
             imgFrame.add(visor, BorderLayout.CENTER);
             imgFrame.setVisible(true);
 
-            addInternalFrame(imgFrame, "Visor de Imágenes"); // <-- título coherente
+            addInternalFrame(imgFrame, "Visor de Imágenes");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -411,12 +396,8 @@ public class Desktop extends JFrame {
         }
     }
 
-    // miniwindows.Desktop.java
-// ---------------- Gestión de ventanas internas ----------------
     private void addInternalFrame(JInternalFrame frame, String title) {
 
-        // **CORRECCIÓN:** Esta línea asegura que al cerrar el JInternalFrame, 
-        // solo se disponga de la ventana y no termine el programa principal (JFrame).
         frame.setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
 
         frame.setLocation(cascadeX, cascadeY);
@@ -433,7 +414,6 @@ public class Desktop extends JFrame {
         desktopPane.add(frame, JLayeredPane.PALETTE_LAYER);
         frame.setVisible(true);
 
-        // Botón en barra de tareas
         JButton taskButton = new JButton(title);
         taskButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         taskButton.setBackground(new Color(60, 60, 60));
@@ -466,7 +446,6 @@ public class Desktop extends JFrame {
 
             @Override
             public void internalFrameIconified(InternalFrameEvent e) {
-                // Actualiza el estado de la barra de tareas
                 taskButton.setBackground(new Color(80, 80, 80));
             }
 
@@ -482,7 +461,6 @@ public class Desktop extends JFrame {
         }
     }
 
-    // ---------------- Fondo de escritorio ----------------
     private class BackgroundPanel extends JPanel {
 
         private Image backgroundImage;

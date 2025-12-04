@@ -15,11 +15,7 @@ import java.util.List;
  *
  * @author Nathan
  */
-
-// Helper para Desktop y FileExplorerWindow
 public class DesktopHelper {
-
-    // Crear icono de carpeta o archivo en el escritorio o panel
     public static JPanel createDesktopIcon(String emoji, String name, java.awt.event.ActionListener doubleClickListener) {
         JPanel iconPanel = new JPanel();
         iconPanel.setLayout(new BorderLayout());
@@ -51,7 +47,6 @@ public class DesktopHelper {
         return iconPanel;
     }
 
-    // Crear icono de archivo según extensión
     public static JPanel createFileIcon(String name) {
         JPanel iconPanel = new JPanel();
         iconPanel.setLayout(new BorderLayout());
@@ -76,7 +71,6 @@ public class DesktopHelper {
         return iconPanel;
     }
 
-    // Crear árbol simulado de archivos para un usuario
     public static JTree createSimulatedFileTree(User user) {
         DefaultMutableTreeNode top;
 

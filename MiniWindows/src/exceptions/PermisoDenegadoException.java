@@ -8,9 +8,6 @@ package exceptions;
  *
  * @author Nathan
  */
-/**
- * Lanzada cuando la operación no tiene permisos para completarse.
- */
 public class PermisoDenegadoException extends Exception {
 
     public PermisoDenegadoException() {

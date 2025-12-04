@@ -58,7 +58,6 @@ public class VisorImagenes extends JPanel {
 
         add(buttonsPanel, BorderLayout.SOUTH);
 
-        // Listeners
         prevButton.addActionListener(this::showPreviousImage);
         nextButton.addActionListener(this::showNextImage);
         addButton.addActionListener(this::addImage);
@@ -145,7 +144,7 @@ public class VisorImagenes extends JPanel {
             }
             loadImages();
             if (!images.isEmpty()) {
-                currentIndex = images.size() - 1; // muestra la última añadida
+                currentIndex = images.size() - 1;
                 updateImage();
             }
         }

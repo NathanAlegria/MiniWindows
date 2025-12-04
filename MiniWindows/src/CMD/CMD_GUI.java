@@ -41,7 +41,6 @@ public class CMD_GUI extends javax.swing.JPanel {
                     e.consume();
 
                     String textoCompleto = consola.getText();
-                    // Esta línea asume que 'prompt' es una variable de clase y funciona
                     int indicePrompt = textoCompleto.lastIndexOf(prompt);
 
                     if (indicePrompt != -1) {
@@ -82,11 +81,8 @@ public class CMD_GUI extends javax.swing.JPanel {
         consola.append("(c) Nathan y Jeremy. Todos los derechos reservados.\n\n");
         consola.append(prompt);
 
-        // Si CMD_GUI extiende JPanel, usa add(componente) para agregar al panel
         add(new JScrollPane(consola), java.awt.BorderLayout.CENTER);
 
-        // --- LÍNEA DE JFAME ELIMINADA ---
-        // setVisible(true); // El contenedor (JInternalFrame) lo hace visible
         gestor1 = new CMD_Funciones();
     }
 

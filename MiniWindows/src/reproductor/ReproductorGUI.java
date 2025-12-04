@@ -1,3 +1,7 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package reproductor;
 
 import javax.swing.*;
@@ -13,6 +17,10 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.File;
 
+/**
+ *
+ * @author Nathan
+ */
 
 public class ReproductorGUI extends JInternalFrame {
 
@@ -20,7 +28,7 @@ public class ReproductorGUI extends JInternalFrame {
     private AdvancedPlayer player;
     private Thread playerThread;
     private File currentFile;
-    private int pausedFrame = 0; // frame donde se pausó
+    private int pausedFrame = 0; 
     private boolean isPlaying = false;
 
     private JButton playPauseButton, stopButton, nextButton, prevButton, addButton;
@@ -35,6 +43,9 @@ public class ReproductorGUI extends JInternalFrame {
     private List<File> playlist;
     private int currentIndex = 0;
 
+    private long playedMillis = 0;
+    private long totalMillis = 0;
+
     public ReproductorGUI(User user) {
         super("Reproductor Musical - " + user.getUsername(), true, true, true, true);
         this.currentUser = user;
@@ -43,7 +54,7 @@ public class ReproductorGUI extends JInternalFrame {
         playlistModel = new DefaultListModel<>();
         playlistList = new JList<>(playlistModel);
 
-        loadPlaylistFromUserFolder(); // cargar playlist automáticamente
+        loadPlaylistFromUserFolder(); 
         setupUI();
         setSize(600, 450);
         setVisible(true);
@@ -52,7 +63,6 @@ public class ReproductorGUI extends JInternalFrame {
     private void setupUI() {
         setLayout(new BorderLayout());
 
-        // --- Top panel: cover y canción ---
         JPanel topPanel = new JPanel(new BorderLayout());
         coverLabel = new JLabel();
         coverLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -63,12 +73,10 @@ public class ReproductorGUI extends JInternalFrame {
         topPanel.add(nowPlayingLabel, BorderLayout.SOUTH);
         add(topPanel, BorderLayout.NORTH);
 
-        // --- Playlist ---
         JScrollPane scroll = new JScrollPane(playlistList);
         scroll.setPreferredSize(new Dimension(200, 0));
         add(scroll, BorderLayout.EAST);
 
-        // --- Control panel ---
         JPanel controlPanel = new JPanel();
         prevButton = new JButton("⏮");
         playPauseButton = new JButton("▶");
@@ -83,7 +91,6 @@ public class ReproductorGUI extends JInternalFrame {
         controlPanel.add(addButton);
         add(controlPanel, BorderLayout.SOUTH);
 
-        // --- Progress panel ---
         JPanel progressPanel = new JPanel(new BorderLayout());
         elapsedLabel = new JLabel("00:00");
         durationLabel = new JLabel("00:00");
@@ -93,7 +100,6 @@ public class ReproductorGUI extends JInternalFrame {
         progressPanel.add(durationLabel, BorderLayout.EAST);
         add(progressPanel, BorderLayout.CENTER);
 
-        // --- Listeners ---
         playPauseButton.addActionListener(e -> togglePlayPause());
         stopButton.addActionListener(e -> stopMusic());
         nextButton.addActionListener(e -> playNext());
@@ -105,7 +111,7 @@ public class ReproductorGUI extends JInternalFrame {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     int idx = playlistList.getSelectedIndex();
-                    if (idx >= 0) {
+                    if (idx >= 0 && idx < playlist.size()) {
                         currentIndex = idx;
                         loadFileAtCurrentIndex();
                         playMusic();
@@ -117,12 +123,15 @@ public class ReproductorGUI extends JInternalFrame {
         progressSlider.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (currentFile != null) {
+                if (currentFile != null && totalMillis > 0) {
                     int value = progressSlider.getValue();
-                    pausedFrame = (int)(value / 100.0 * getTotalFrames(currentFile));
+                    playedMillis = (long) (value / 100.0 * totalMillis);
+                    pausedFrame = (int) (playedMillis / 26.0); 
+                    boolean wasPlaying = isPlaying;
                     stopMusic();
                     loadFileAtCurrentIndex();
-                    playMusic();
+                    if (wasPlaying) playMusic(); 
+                    else updateProgress(); 
                 }
             }
         });
@@ -138,7 +147,6 @@ public class ReproductorGUI extends JInternalFrame {
         } catch (Exception ignored) {}
     }
 
-    // ----------------- PLAYLIST -----------------
     private void loadPlaylistFromUserFolder() {
         try {
             File musicDir = new File("Z_ROOT" + File.separator + currentUser.getUsername() + File.separator + "Musica");
@@ -180,47 +188,70 @@ public class ReproductorGUI extends JInternalFrame {
     }
 
     private void loadFileAtCurrentIndex() {
-        if(currentIndex<0 || currentIndex>=playlist.size()) return;
+        if(currentIndex<0 || currentIndex>=playlist.size()) {
+            currentFile = null;
+            nowPlayingLabel.setText("Now Playing: Ninguno");
+            setCoverImage("/Imagenes/Play");
+            return;
+        }
         currentFile = playlist.get(currentIndex);
-        pausedFrame = 0;
         nowPlayingLabel.setText("Now Playing: "+currentFile.getName());
         setCoverImage("/Imagenes/Play");
+        int totalFrames = getTotalFrames(currentFile);
+        totalMillis = (long) totalFrames * 26L; // aproximación ms
+        playedMillis = (long) pausedFrame * 26L;
         updateProgress();
     }
 
     private void togglePlayPause(){
-        if(isPlaying) pauseMusic();
-        else playMusic();
-        playPauseButton.setText(isPlaying?"⏸":"▶");
+        if(isPlaying) {
+            pauseMusic();
+        } else {
+            playMusic();
+        }
+        playPauseButton.setText(isPlaying ? "⏸" : "▶");
     }
 
-    // ----------------- REPRODUCCIÓN -----------------
+    //Reproduccion
     private void playMusic(){
         if(currentFile==null) return;
         if(playerThread!=null && playerThread.isAlive()) return;
 
+        FileInputStream fis;
         try{
-            FileInputStream fis = new FileInputStream(currentFile);
+            fis = new FileInputStream(currentFile);
             player = new AdvancedPlayer(fis);
         }catch(Exception ex){
             JOptionPane.showMessageDialog(this,"Error reproduciendo archivo: "+ex.getMessage());
             return;
         }
 
+        isPlaying = true;
+        playPauseButton.setText("⏸");
+        sliderTimer.start();
+
         playerThread = new Thread(()->{
             try{
-                isPlaying = true;
-                sliderTimer.start();
                 player.setPlayBackListener(new PlaybackListener(){
                     @Override
                     public void playbackFinished(PlaybackEvent evt){
                         pausedFrame += evt.getFrame();
+                        playedMillis = (long) pausedFrame * 26L;
                     }
                 });
-                player.play(pausedFrame,Integer.MAX_VALUE);
-            }catch(Exception ignored){}
-            finally{
-                SwingUtilities.invokeLater(this::playNext);
+
+                player.play(pausedFrame, Integer.MAX_VALUE);
+
+            }catch(Exception ignored){
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    if (isPlaying) { 
+                        playNext();
+                    } else {
+                        playPauseButton.setText("▶");
+                        sliderTimer.stop();
+                    }
+                });
             }
         });
         playerThread.start();
@@ -229,21 +260,27 @@ public class ReproductorGUI extends JInternalFrame {
     private void pauseMusic(){
         if(player!=null){
             player.close();
-            isPlaying=false;
-            sliderTimer.stop();
         }
+        pausedFrame = (int)(playedMillis / 26L);
+        isPlaying=false;
+        sliderTimer.stop();
+        playPauseButton.setText("▶");
     }
 
     private void stopMusic(){
         if(player!=null) player.close();
         playerThread=null;
         pausedFrame=0;
+        playedMillis = 0;
         isPlaying=false;
         sliderTimer.stop();
+        progressSlider.setValue(0);
+        playPauseButton.setText("▶");
         updateProgress();
     }
 
     private void playNext(){
+        if(playlist.isEmpty()) return; 
         stopMusic();
         currentIndex = (currentIndex+1)%playlist.size();
         loadFileAtCurrentIndex();
@@ -251,6 +288,7 @@ public class ReproductorGUI extends JInternalFrame {
     }
 
     private void playPrevious(){
+        if(playlist.isEmpty()) return;
         stopMusic();
         currentIndex = (currentIndex-1+playlist.size())%playlist.size();
         loadFileAtCurrentIndex();
@@ -258,19 +296,24 @@ public class ReproductorGUI extends JInternalFrame {
     }
 
     private void updateProgress(){
-        if(currentFile!=null){
-            int totalFrames = getTotalFrames(currentFile);
-            int posFrames = pausedFrame;
-            int percent=0;
-            if(totalFrames>0) percent=(int)((posFrames*100.0)/totalFrames);
-            progressSlider.setValue(Math.min(percent,100));
-            elapsedLabel.setText(formatTime((long)(posFrames*26))); // aprox 26ms/frame
-            durationLabel.setText(formatTime((long)(totalFrames*26)));
+        if(currentFile!=null && totalMillis>0){
+            if(isPlaying){
+                playedMillis += 500;
+                if(playedMillis > totalMillis) playedMillis = totalMillis;
+            }
+            int percent = (int) ((playedMillis * 100.0) / totalMillis);
+            progressSlider.setValue(Math.min(Math.max(percent, 0), 100));
+            elapsedLabel.setText(formatTime(playedMillis));
+            durationLabel.setText(formatTime(totalMillis));
+        } else {
+            progressSlider.setValue(0);
+            elapsedLabel.setText("00:00");
+            durationLabel.setText("00:00");
         }
     }
 
     private int getTotalFrames(File f){
-        return 10000; // aproximación
+        return 10000; 
     }
 
     private String formatTime(long millis){
@@ -279,7 +322,7 @@ public class ReproductorGUI extends JInternalFrame {
         long seconds = totalSecs%60;
         return String.format("%02d:%02d",minutes,seconds);
     }
-    
+
     public User getCurrentUser() {
         return currentUser;
     }

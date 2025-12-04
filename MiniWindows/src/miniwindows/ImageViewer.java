@@ -28,7 +28,6 @@ public class ImageViewer extends JInternalFrame {
         super("Visor de Imágenes", true, true, true, true);
         this.images = images;
 
-        // Carpeta donde se almacenan las imágenes del usuario
         if (!images.isEmpty()) {
             imagesFolder = images.get(0).getParentFile();
         } else {
@@ -63,13 +62,13 @@ public class ImageViewer extends JInternalFrame {
     }
 
     private void showPrevious() {
-        if (images.isEmpty()) return; // Evitar errores
+        if (images.isEmpty()) return;
         currentIndex = (currentIndex - 1 + images.size()) % images.size();
         updateImage();
     }
 
     private void showNext() {
-        if (images.isEmpty()) return; // Evitar errores
+        if (images.isEmpty()) return;
         currentIndex = (currentIndex + 1) % images.size();
         updateImage();
     }
@@ -81,7 +80,6 @@ public class ImageViewer extends JInternalFrame {
         } else {
             File imgFile = images.get(currentIndex);
             ImageIcon icon = new ImageIcon(imgFile.getAbsolutePath());
-            // Escalar imagen al tamaño del label
             Image img = icon.getImage().getScaledInstance(
                     imageLabel.getWidth(), imageLabel.getHeight(), Image.SCALE_SMOOTH);
             imageLabel.setIcon(new ImageIcon(img));
@@ -113,13 +111,13 @@ public class ImageViewer extends JInternalFrame {
                 try {
                     File dest = new File(imagesFolder, f.getName());
                     Files.copy(f.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                    images.add(dest); // Añadir a la lista actual
+                    images.add(dest); 
                 } catch (IOException ex) {
                     JOptionPane.showMessageDialog(this, "Error al añadir imagen: " + ex.getMessage());
                 }
             }
             if (!images.isEmpty()) {
-                currentIndex = images.size() - selectedFiles.length; // Mostrar primera nueva añadida
+                currentIndex = images.size() - selectedFiles.length;
                 updateImage();
             }
         }

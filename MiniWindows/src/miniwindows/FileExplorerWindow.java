@@ -40,7 +40,6 @@ public class FileExplorerWindow extends JInternalFrame {
     private final List<File> clipboard = new ArrayList<>();
     private boolean clipboardCut = false;
 
-    // 🔵 NUEVO: BOTÓN PARA SUBIR IMAGEN
     private JButton btnUploadImage;
 
     public FileExplorerWindow(User user, File rootFolder) {
@@ -58,7 +57,6 @@ public class FileExplorerWindow extends JInternalFrame {
         updateFileTable(currentDir);
     }
 
-    // ------------------- Toolbar -------------------
     private void initToolbar() {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
@@ -91,7 +89,6 @@ public class FileExplorerWindow extends JInternalFrame {
         toolbar.add(btnCut);
         toolbar.add(btnPaste);
 
-        // 🔵 NUEVO: BOTÓN SUBIR IMAGEN, OCULTO POR DEFECTO
         btnUploadImage = new JButton("Subir Imagen");
         btnUploadImage.setVisible(false);
         btnUploadImage.addActionListener(e -> uploadImage());
@@ -100,7 +97,6 @@ public class FileExplorerWindow extends JInternalFrame {
 
         add(toolbar, BorderLayout.NORTH);
 
-        // Listeners existentes
         btnNewFolder.addActionListener(e -> createNewFolder());
         btnRename.addActionListener(e -> renameSelectedFile());
         btnDelete.addActionListener(e -> deleteSelectedFile());
@@ -126,7 +122,6 @@ public class FileExplorerWindow extends JInternalFrame {
         sortCombo.addActionListener(e -> updateFileTable(currentDir));
     }
 
-    // ------------------- Split Pane -------------------
     private void initSplitPane() {
         folderTree = DesktopHelper.createSimulatedFileTree(currentUser);
         folderTree.setPreferredSize(new Dimension(240, 0));
@@ -164,9 +159,6 @@ public class FileExplorerWindow extends JInternalFrame {
         add(splitPane, BorderLayout.CENTER);
     }
 
-    // --------------------------------------------------
-    // 🔵 NUEVO: SOLO MOSTRAR BOTÓN "SUBIR IMAGEN" EN /Imagenes
-    // --------------------------------------------------
     private void checkIfImagesFolder() {
         if (currentDir == null) {
             btnUploadImage.setVisible(false);
@@ -176,7 +168,6 @@ public class FileExplorerWindow extends JInternalFrame {
         btnUploadImage.setVisible(nombre.equals("imagenes"));
     }
 
-    // ------------------- Tabla -------------------
     private void updateFileTable(File dir) {
         if (dir == null || !dir.exists()) {
             tableModel.setFiles(List.of());
@@ -184,7 +175,6 @@ public class FileExplorerWindow extends JInternalFrame {
             return;
         }
 
-        // 🔵 Revisar si estamos en /Imagenes
         checkIfImagesFolder();
 
         File[] files = dir.listFiles();
@@ -210,9 +200,6 @@ public class FileExplorerWindow extends JInternalFrame {
         tableModel.setFiles(list);
     }
 
-    // --------------------------------------------------
-    // 🔵 NUEVO MÉTODO: SUBIR IMAGEN AL FOLDER /Imagenes
-    // --------------------------------------------------
     private void uploadImage() {
         JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(true);
@@ -238,7 +225,6 @@ public class FileExplorerWindow extends JInternalFrame {
         JOptionPane.showMessageDialog(this, "Imágenes subidas correctamente.");
     }
 
-    // ------------------- (RESTO DE TU CÓDIGO ORIGINAL SIN MODIFICAR) -------------------
     private void openFile(File f) {
         String name = f.getName().toLowerCase();
         Container parent = SwingUtilities.getAncestorOfClass(JDesktopPane.class, this);

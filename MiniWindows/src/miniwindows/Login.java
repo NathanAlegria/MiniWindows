@@ -27,15 +27,13 @@ public class Login extends JFrame {
     private CardLayout cardLayout;
 
     public Login() {
-        // Cargar usuarios
         UserManager.loadUsers();
 
         setTitle("Mini-Windows - Iniciar Sesión");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setUndecorated(true); // quitar barra de título y bordes
-        setResizable(false);   // no permitir redimensionar
+        setUndecorated(true); 
+        setResizable(false);   
 
-        // ---------------- Contenido ----------------
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
@@ -55,7 +53,6 @@ public class Login extends JFrame {
 
         add(mainPanel);
 
-        // Usuario por defecto
         List<User> initialUsers = UserManager.getUsers();
         if (!initialUsers.isEmpty()) {
             this.currentUser = initialUsers.get(0).getUsername();
@@ -64,16 +61,12 @@ public class Login extends JFrame {
             }
         }
 
-        // ---------------- Pantalla completa ----------------
-        // Obtener la resolución actual de pantalla
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(screenSize.width, screenSize.height);
         setLocation(0, 0);
 
-        // Mostrar login
         setVisible(true);
 
-        // Mostrar la card por defecto
         cardLayout.show(cardPanel, "SINGLE_USER");
     }
 
@@ -119,7 +112,6 @@ public class Login extends JFrame {
         btnOtherUser.setBorderPainted(false);
         btnOtherUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Listeners
         btnLogin.addActionListener(e -> attemptLogin());
         txtPassword.addActionListener(e -> attemptLogin());
         btnOtherUser.addActionListener(e -> {
@@ -128,7 +120,6 @@ public class Login extends JFrame {
             cardLayout.show(cardPanel, "USER_SELECTION");
         });
 
-        // Montaje vertical
         loginContainer.add(Box.createVerticalStrut(40));
         loginContainer.add(lblIcon);
         loginContainer.add(Box.createVerticalStrut(10));
