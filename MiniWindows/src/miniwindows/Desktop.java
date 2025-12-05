@@ -376,7 +376,7 @@ public class Desktop extends JFrame {
 
     private void launchConsole() {
         try {
-            CMD_GUI cmd = new CMD_GUI();
+            CMD_GUI cmd = new CMD_GUI(currentUser);
             JInternalFrame cmdFrame = new JInternalFrame("Consola", true, true, true, true);
             cmdFrame.setSize(800, 500);
             cmdFrame.setLayout(new BorderLayout());

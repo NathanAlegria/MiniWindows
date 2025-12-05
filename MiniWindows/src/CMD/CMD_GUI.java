@@ -10,29 +10,45 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-public class CMD_GUI extends javax.swing.JPanel {
+import miniwindows.Desktop;
+import miniwindows.User;
+
+public class CMD_GUI extends JPanel {
 
     private JTextArea consola;
     private CMD_Funciones gestor1;
     private String prompt;
     private File directorioActual;
+    private final File rootUsuario; // Directorio raíz dentro de Z_ROOT
+    private final User currentUser;
 
-    public CMD_GUI() {
-        setPreferredSize(new java.awt.Dimension(800, 500));
-        setLayout(new java.awt.BorderLayout()); 
-        directorioActual = new File(System.getProperty("user.dir"));
-        prompt = directorioActual.getAbsolutePath() + "> ";
+    public CMD_GUI(User user) {
+        this.currentUser = user;
+        this.setLayout(new java.awt.BorderLayout());
+        this.setPreferredSize(new java.awt.Dimension(800, 500));
+
+        // Directorio raíz del usuario dentro de Z_ROOT
+        rootUsuario = new File(Desktop.Z_ROOT_PATH + user.getUsername());
+        if (!rootUsuario.exists()) {
+            rootUsuario.mkdirs();
+        }
+
+        directorioActual = rootUsuario;
+        prompt = getPromptPath(directorioActual) + "> ";
 
         consola = new JTextArea();
         consola.setFont(new Font("Consolas", Font.PLAIN, 14));
         consola.setBackground(Color.BLACK);
         consola.setForeground(Color.WHITE);
         consola.setCaretColor(Color.WHITE);
+        consola.setLineWrap(true); // Que se ajuste al tamaño del panel
+        consola.setWrapStyleWord(true);
 
+        // Listener de teclado
         consola.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -56,13 +72,10 @@ public class CMD_GUI extends javax.swing.JPanel {
                     }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                    if (cursorEnPrompt()) {
-                        e.consume();
-                    }
-                }
-
-                if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_UP) {
+                // Evitar borrar el prompt
+                if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE
+                        || e.getKeyCode() == KeyEvent.VK_LEFT
+                        || e.getKeyCode() == KeyEvent.VK_UP) {
                     if (cursorEnPrompt()) {
                         e.consume();
                     }
@@ -86,25 +99,41 @@ public class CMD_GUI extends javax.swing.JPanel {
         gestor1 = new CMD_Funciones();
     }
 
+    // Devuelve true si el cursor está antes del prompt
     private boolean cursorEnPrompt() {
         String texto = consola.getText();
         int indicePrompt = texto.lastIndexOf(prompt);
         return consola.getCaretPosition() <= indicePrompt + prompt.length();
     }
 
+    // Devuelve la ruta relativa dentro de Z_ROOT para mostrar en el prompt
+    private String getPromptPath(File dir) {
+        String fullPath = dir.getAbsolutePath();
+        String rootPath = rootUsuario.getAbsolutePath(); // C:\...Z_ROOT\Admin
+        String zPath = "Z_ROOT" + File.separator;
+
+        if (fullPath.equals(rootPath)) {
+            return zPath + currentUser.getUsername(); // Z_ROOT\Admin
+        } else if (fullPath.startsWith(rootPath + File.separator)) {
+            // Subcarpetas
+            String subPath = fullPath.substring(rootPath.length() + 1); // evita el '\'
+            return zPath + currentUser.getUsername() + File.separator + subPath;
+        } else {
+            // Por seguridad, no permitir salir del rootUsuario
+            return zPath + currentUser.getUsername();
+        }
+    }
+
     private String extraerArgumento(String texto) {
         int inicio = texto.indexOf('<');
         int fin = texto.indexOf('>');
-
         if (inicio != -1 && fin != -1 && fin > inicio) {
             return texto.substring(inicio + 1, fin).trim();
         }
-
         String[] partes = texto.split("\\s+", 2);
         if (partes.length > 1) {
             return partes[1].replace("<", "").replace(">", "").trim();
         }
-
         return "";
     }
 
@@ -114,48 +143,35 @@ public class CMD_GUI extends javax.swing.JPanel {
 
     private void procesarComando(String entrada) {
         try {
-
             String comando = extraerComando(entrada);
             String argumento = extraerArgumento(entrada);
 
             switch (comando) {
-                case "Mkdir":
+                case "Mkdir" ->
                     ejecutarMkdir(argumento);
-                    break;
-                case "Mfile":
+                case "Mfile" ->
                     ejecutarMfile(argumento);
-                    break;
-                case "Rm":
+                case "Rm" ->
                     ejecutarRm(argumento);
-                    break;
-                case "Cd":
+                case "Cd" ->
                     ejecutarCd(argumento);
-                    break;
-                case "...":
+                case "..." ->
                     ejecutarRegresarDir();
-                    break;
-                case "Dir":
+                case "Dir" ->
                     ejecutarDir();
-                    break;
-                case "Date":
+                case "Date" ->
                     ejecutarDate();
-                    break;
-                case "Time":
+                case "Time" ->
                     ejecutarTime();
-                    break;
-                case "Escribir":
+                case "Escribir" ->
                     ejecutarEscribir(entrada);
-                    break;
-                case "Leer":
+                case "Leer" ->
                     ejecutarLeer(argumento);
-                    break;
-                case "Exit":
+                case "Exit" ->
                     ejecutarExit();
-                    break;
-                default:
+                default ->
                     consola.append("Error: Comando no reconocido - " + comando);
             }
-
         } catch (IOException e) {
             consola.append("Error de disco: " + e.getMessage());
         } catch (Exception e) {
@@ -210,22 +226,27 @@ public class CMD_GUI extends javax.swing.JPanel {
     private void ejecutarCd(String ruta) {
         File nuevoDir = gestor1.cambiarDirectorio(directorioActual, ruta);
 
+        // Limitar a raíz del usuario
+        if (!nuevoDir.getAbsolutePath().startsWith(rootUsuario.getAbsolutePath())) {
+            consola.append("Error: No puedes salir del directorio de usuario");
+            return;
+        }
+
         if (!nuevoDir.equals(directorioActual)) {
             directorioActual = nuevoDir;
-            prompt = directorioActual.getAbsolutePath() + "> ";
+            prompt = getPromptPath(directorioActual) + "> ";
             consola.append("Directorio cambiado");
         }
     }
 
     private void ejecutarRegresarDir() {
         File anterior = gestor1.directorioAnterior(directorioActual);
-
-        if (!anterior.equals(directorioActual)) {
-            directorioActual = anterior;
-            prompt = directorioActual.getAbsolutePath() + "> ";
-        } else {
-            consola.append("Ya está en el directorio raíz");
+        if (!anterior.getAbsolutePath().startsWith(rootUsuario.getAbsolutePath())) {
+            consola.append("Ya está en el directorio raíz del usuario");
+            return;
         }
+        directorioActual = anterior;
+        prompt = getPromptPath(directorioActual) + "> ";
     }
 
     private void ejecutarDir() {
@@ -242,7 +263,6 @@ public class CMD_GUI extends javax.swing.JPanel {
 
     private void ejecutarEscribir(String entrada) throws IOException {
         String resto = entrada.substring(9).trim();
-
         int separador = resto.indexOf(':');
         String nombreArchivo;
         String texto;
@@ -261,10 +281,8 @@ public class CMD_GUI extends javax.swing.JPanel {
         }
 
         nombreArchivo = nombreArchivo.replace("<", "").replace(">", "").trim();
-
         File archivo = new File(directorioActual, nombreArchivo);
         gestor1.escribirArchivo(archivo, texto);
-
         consola.append("Texto guardado en el archivo");
     }
 
@@ -281,7 +299,6 @@ public class CMD_GUI extends javax.swing.JPanel {
     }
 
     private void ejecutarExit() {
-        consola.append("Cerrando la consola...");
-        System.exit(0);
+        consola.append("No se puede salir del CMD de usuario actual.\n");
     }
 }

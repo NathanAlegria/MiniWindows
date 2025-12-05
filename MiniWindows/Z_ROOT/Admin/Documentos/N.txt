@@ -1,0 +1,6 @@
+{\rtf1\ansi
+{\fonttbl\f0\fnil Monospaced;\f1\fnil Dialog;\f2\fnil Verdana;}
+{\colortbl\red0\green0\blue0;\red51\green51\blue51;\red255\green51\blue153;}
+
+\f2\fs64\i0\b0\cf2 Holaaaaaaaaaaaaaaa\f1\fs24\cf1\par
+}
