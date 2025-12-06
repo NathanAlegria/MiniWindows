@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-
 package miniwindows;
 
 import javax.swing.*;
@@ -15,6 +14,7 @@ import java.util.List;
  *
  * @author Nathan
  */
+
 public class DesktopHelper {
     public static JPanel createDesktopIcon(String emoji, String name, java.awt.event.ActionListener doubleClickListener) {
         JPanel iconPanel = new JPanel();
@@ -76,9 +76,14 @@ public class DesktopHelper {
 
         if (user.isAdmin()) {
             top = new DefaultMutableTreeNode("Z:\\ (Admin)");
+            
+            top.add(createDirectoryNode(user.getUsername())); 
+            
             List<User> users = UserManager.getUsers();
             for (User u : users) {
-                top.add(createDirectoryNode(u.getUsername()));
+                if (!u.getUsername().equals(user.getUsername())) {
+                    top.add(createDirectoryNode(u.getUsername()));
+                }
             }
         } else {
             String userPath = user.getUsername();
@@ -114,5 +119,51 @@ public class DesktopHelper {
         }
         return userNode;
     }
-}
+    
+    public static void cleanUserDirectory(String username) {
+        File userDir = new File(Desktop.Z_ROOT_PATH + username);
+        if (!userDir.exists()) {
+            return;
+        }
 
+        String officialDocs = "Mis Documentos";
+        String officialMusic = "Música"; 
+        String officialImages = "Mis Imágenes";
+        
+        File[] files = userDir.listFiles();
+        if (files == null) return;
+        
+        for (File f : files) {
+            if (f.isDirectory()) {
+                String name = f.getName();
+                
+                // Eliminar duplicados no oficiales. Mantenemos "Mis Documentos", "Música" y "Mis Imágenes"
+                if (name.equalsIgnoreCase("Documentos") && !name.equals(officialDocs)) {
+                    deleteDirectory(f);
+                } else if (name.equalsIgnoreCase("Imágenes") && !name.equals(officialImages)) {
+                    deleteDirectory(f);
+                } else if (name.equalsIgnoreCase("Mis Documentos") && !name.equals(officialDocs)) {
+                     deleteDirectory(f);
+                } else if (name.equalsIgnoreCase("Musica") && !name.equals(officialMusic)) {
+                    deleteDirectory(f);
+                }
+            }
+        }
+    }
+    
+    // Método auxiliar de borrado para la limpieza
+    private static void deleteDirectory(File dir) {
+        if (dir == null) return;
+        File[] children = dir.listFiles();
+        if (children != null) {
+            for (File f : children) {
+                if (f.isDirectory()) {
+                    deleteDirectory(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        dir.delete();
+    }
+}

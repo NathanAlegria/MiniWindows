@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-
 package miniwindows;
 
 import javax.swing.*;
@@ -13,11 +12,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  *
  * @author Nathan
  */
-
 public class ImageViewer extends JInternalFrame {
 
     private JLabel imageLabel;
@@ -37,7 +36,8 @@ public class ImageViewer extends JInternalFrame {
         if (!images.isEmpty()) {
             imagesFolder = images.get(0).getParentFile();
         } else {
-            imagesFolder = new File(Desktop.Z_ROOT_PATH + "Imagenes");
+            // CORRECCIÓN: Apunta a "Mis Imágenes"
+            imagesFolder = new File(Desktop.Z_ROOT_PATH + File.separator + "Mis Imágenes"); 
             if (!imagesFolder.exists()) imagesFolder.mkdirs();
         }
 
@@ -179,7 +179,7 @@ public class ImageViewer extends JInternalFrame {
             public boolean accept(File f) {
                 String n = f.getName().toLowerCase();
                 return f.isDirectory() || n.endsWith(".png") || n.endsWith(".jpg") ||
-                       n.endsWith(".jpeg") || n.endsWith(".gif") || n.endsWith(".bmp");
+                        n.endsWith(".jpeg") || n.endsWith(".gif") || n.endsWith(".bmp");
             }
 
             public String getDescription() {

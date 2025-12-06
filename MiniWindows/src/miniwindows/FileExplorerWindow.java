@@ -9,18 +9,17 @@ import reproductor.ReproductorGUI;
 
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.swing.filechooser.FileSystemView;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.table.DefaultTableCellRenderer;
 
 /**
  *
@@ -42,10 +41,16 @@ public class FileExplorerWindow extends JInternalFrame {
 
     private JButton btnUploadImage;
 
-    public FileExplorerWindow(User user, File rootFolder) {
+    public FileExplorerWindow(User user) {
         super("Explorador - " + user.getUsername(), true, true, true, true);
         this.currentUser = user;
-        this.rootFolder = rootFolder;
+        this.rootFolder = new File(Desktop.Z_ROOT_PATH + user.getUsername());
+        if (!rootFolder.exists()) {
+            rootFolder.mkdirs();
+        }
+
+        DesktopHelper.cleanUserDirectory(user.getUsername()); // Llama a la limpieza antes de inicializar
+        initializeUserDirectory(); 
 
         setSize(900, 600);
         setLocation(50, 50);
@@ -53,15 +58,35 @@ public class FileExplorerWindow extends JInternalFrame {
 
         initToolbar();
         initSplitPane();
+
         currentDir = rootFolder;
         updateFileTable(currentDir);
+    }
+
+    private void initializeUserDirectory() {
+        try {
+            if (!rootFolder.exists()) {
+                rootFolder.mkdirs();
+            }
+
+            File docs = new File(rootFolder, "Mis Documentos");
+            File music = new File(rootFolder, "Música");
+            File images = new File(rootFolder, "Mis Imágenes");
+
+            docs.mkdirs();
+            music.mkdirs();
+            images.mkdirs();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error inicializando directorio de usuario: " + e.getMessage());
+        }
     }
 
     private void initToolbar() {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
 
-        JButton btnNewFolder = new JButton("Nueva Carpeta");
+        JButton btnNew = new JButton("Nuevo");
         JButton btnRename = new JButton("Renombrar");
         JButton btnDelete = new JButton("Eliminar");
         JButton btnOrganize = new JButton("Organizar");
@@ -69,7 +94,7 @@ public class FileExplorerWindow extends JInternalFrame {
         JButton btnCut = new JButton("Cortar");
         JButton btnPaste = new JButton("Pegar");
 
-        toolbar.add(btnNewFolder);
+        toolbar.add(btnNew);
         toolbar.add(btnRename);
         toolbar.add(btnDelete);
         toolbar.add(btnOrganize);
@@ -97,10 +122,10 @@ public class FileExplorerWindow extends JInternalFrame {
 
         add(toolbar, BorderLayout.NORTH);
 
-        btnNewFolder.addActionListener(e -> createNewFolder());
+        btnNew.addActionListener(e -> showCreateDialog());
         btnRename.addActionListener(e -> renameSelectedFile());
         btnDelete.addActionListener(e -> deleteSelectedFile());
-        btnOrganize.addActionListener(e -> organizeFiles());
+        btnOrganize.addActionListener(e -> organizeFilesInCurrentDir());
         btnCopy.addActionListener(e -> copySelectedFile());
         btnCut.addActionListener(e -> cutSelectedFile());
         btnPaste.addActionListener(e -> pasteClipboard());
@@ -159,13 +184,44 @@ public class FileExplorerWindow extends JInternalFrame {
         add(splitPane, BorderLayout.CENTER);
     }
 
-    private void checkIfImagesFolder() {
-        if (currentDir == null) {
-            btnUploadImage.setVisible(false);
+    private void showCreateDialog() {
+        if (currentDir == null || !currentDir.exists()) {
+            JOptionPane.showMessageDialog(this, "Seleccione una carpeta válida.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        String nombre = currentDir.getName().toLowerCase();
-        btnUploadImage.setVisible(nombre.equals("imagenes"));
+
+        String[] options = {"Carpeta", "Archivo", "Cancelar"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "¿Qué desea crear?", "Crear Nuevo",
+                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
+                null, options, options[0]);
+
+        if (choice == 0) { // Carpeta
+            String name = JOptionPane.showInputDialog(this, "Ingrese el nombre de la nueva carpeta:");
+            if (name != null && !name.trim().isEmpty()) {
+                File newDir = new File(currentDir, name.trim());
+                if (newDir.mkdirs()) {
+                    updateFileTable(currentDir);
+                    refreshTreeModel(); 
+                } else {
+                    JOptionPane.showMessageDialog(this, "No se pudo crear la carpeta.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else if (choice == 1) { // Archivo de cualquier tipo
+            String name = JOptionPane.showInputDialog(this, "Ingrese el nombre del archivo (ej. notas.txt o cualquier extensión):");
+            if (name != null && !name.trim().isEmpty()) {
+                File newFile = new File(currentDir, name.trim());
+                try {
+                    if (newFile.createNewFile()) {
+                        updateFileTable(currentDir);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "El archivo ya existe o no pudo crearse.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(this, "Error creando archivo: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
     }
 
     private void updateFileTable(File dir) {
@@ -200,7 +256,20 @@ public class FileExplorerWindow extends JInternalFrame {
         tableModel.setFiles(list);
     }
 
+    private void checkIfImagesFolder() {
+        if (currentDir == null) {
+            btnUploadImage.setVisible(false);
+            return;
+        }
+        String nombre = currentDir.getName().toLowerCase();
+        btnUploadImage.setVisible(nombre.equals("mis imágenes") || nombre.equals("imagenes") || nombre.equals("imágenes"));
+    }
+
     private void uploadImage() {
+        if (currentDir == null) {
+            return;
+        }
+
         JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(true);
         chooser.setFileFilter(
@@ -233,15 +302,13 @@ public class FileExplorerWindow extends JInternalFrame {
                 if (f.isDirectory()) {
                     currentDir = f;
                     updateFileTable(f);
-                } else if (name.endsWith(".txt")) {
-                    // Abrir editor de texto
+                } else if (name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".java") || name.endsWith(".py") || name.endsWith(".log")) {
                     EditorTexto editor = new EditorTexto(currentUser);
                     editor.openFile(f);
                     desktop.add(editor, JLayeredPane.PALETTE_LAYER);
                     editor.setVisible(true);
                     editor.setSelected(true);
-                } else if (name.endsWith(".mp3") || name.endsWith(".wav")) {
-                    // Abrir reproductor
+                } else if (name.endsWith(".mp3") || name.endsWith(".wav") || name.endsWith(".ogg") || name.endsWith(".flac")) {
                     ReproductorGUI rep = null;
                     for (JInternalFrame frame : desktop.getAllFrames()) {
                         if (frame instanceof ReproductorGUI r
@@ -259,7 +326,6 @@ public class FileExplorerWindow extends JInternalFrame {
                     rep.loadFromFile(f);
                     rep.setSelected(true);
                 } else if (name.matches(".*\\.(png|jpg|jpeg|gif|bmp)")) {
-                    // Abrir visor de imágenes
                     File[] files = currentDir.listFiles(file -> file.getName().toLowerCase().matches(".*\\.(png|jpg|jpeg|gif|bmp)"));
                     List<File> imageList = files == null ? List.of() : List.of(files);
 
@@ -268,7 +334,14 @@ public class FileExplorerWindow extends JInternalFrame {
                     viewer.setVisible(true);
                     viewer.setSelected(true);
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se puede abrir: " + f.getName());
+                    int openText = JOptionPane.showConfirmDialog(this, "Tipo no reconocido. ¿Abrir con editor de texto?", "Abrir archivo", JOptionPane.YES_NO_OPTION);
+                    if (openText == JOptionPane.YES_OPTION) {
+                        EditorTexto editor = new EditorTexto(currentUser);
+                        editor.openFile(f);
+                        desktop.add(editor, JLayeredPane.PALETTE_LAYER);
+                        editor.setVisible(true);
+                        editor.setSelected(true);
+                    }
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al abrir archivo: " + ex.getMessage());
@@ -293,19 +366,27 @@ public class FileExplorerWindow extends JInternalFrame {
 
     private String buildPathFromNode(DefaultMutableTreeNode node) {
         Object[] nodes = node.getPath();
-        StringBuilder path = new StringBuilder(rootFolder.getAbsolutePath());
-        for (int i = 1; i < nodes.length; i++) {
-            path.append(File.separator).append(nodes[i].toString());
+        StringBuilder path = new StringBuilder();
+        
+        if (currentUser.isAdmin()) {
+            path.append(Desktop.Z_ROOT_PATH);
+            
+            if (nodes.length == 1) {
+                 return path.toString();
+            }
+            
+            for (int i = 1; i < nodes.length; i++) {
+                path.append(File.separator).append(nodes[i].toString());
+            }
+            
+        } else {
+            path.append(rootFolder.getAbsolutePath());
+            for (int i = 1; i < nodes.length; i++) {
+                path.append(File.separator).append(nodes[i].toString());
+            }
         }
+        
         return path.toString();
-    }
-
-    private void createNewFolder() {
-        String name = JOptionPane.showInputDialog(this, "Nombre de la nueva carpeta:");
-        if (name != null && !name.trim().isEmpty()) {
-            new File(currentDir, name).mkdirs();
-            updateFileTable(currentDir);
-        }
     }
 
     private void renameSelectedFile() {
@@ -333,6 +414,7 @@ public class FileExplorerWindow extends JInternalFrame {
             f.delete();
         }
         updateFileTable(currentDir);
+        refreshTreeModel();
     }
 
     private void deleteDirectory(File dir) {
@@ -352,10 +434,11 @@ public class FileExplorerWindow extends JInternalFrame {
         dir.delete();
     }
 
-    private void organizeFiles() {
-        File docs = new File(currentDir, "Documentos");
+    private void organizeFilesInCurrentDir() {
+        File docs = new File(currentDir, "Mis Documentos"); 
         File music = new File(currentDir, "Música");
-        File images = new File(currentDir, "Imágenes");
+        File images = new File(currentDir, "Mis Imágenes");
+        
         docs.mkdirs();
         music.mkdirs();
         images.mkdirs();
@@ -365,14 +448,23 @@ public class FileExplorerWindow extends JInternalFrame {
             for (File f : files) {
                 if (f.isFile()) {
                     String ext = f.getName().toLowerCase();
+                    boolean organized = false;
                     try {
-                        if (ext.endsWith(".txt") || ext.endsWith(".pdf") || ext.endsWith(".docx")) {
+                        if (ext.endsWith(".txt") || ext.endsWith(".pdf") || ext.endsWith(".docx") || ext.endsWith(".doc") || ext.endsWith(".md") || ext.endsWith(".java") || ext.endsWith(".py") || ext.endsWith(".log")) {
                             Files.move(f.toPath(), new File(docs, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        } else if (ext.endsWith(".mp3") || ext.endsWith(".wav")) {
+                            organized = true;
+                        } else if (ext.endsWith(".mp3") || ext.endsWith(".wav") || ext.endsWith(".flac") || ext.endsWith(".ogg")) {
                             Files.move(f.toPath(), new File(music, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            organized = true;
                         } else if (ext.matches(".*\\.(png|jpg|jpeg|gif|bmp)")) {
                             Files.move(f.toPath(), new File(images, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            organized = true;
                         }
+
+                        if (!organized) { 
+                            Files.move(f.toPath(), new File(docs, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
+
                     } catch (IOException ignored) {
                     }
                 }
@@ -380,6 +472,7 @@ public class FileExplorerWindow extends JInternalFrame {
         }
         updateFileTable(currentDir);
         JOptionPane.showMessageDialog(this, "Archivos organizados correctamente.");
+        refreshTreeModel();
     }
 
     private void copySelectedFile() {
@@ -412,7 +505,6 @@ public class FileExplorerWindow extends JInternalFrame {
         if (clipboard.isEmpty() || currentDir == null) {
             return;
         }
-
         try {
             for (File f : clipboard) {
                 File newLoc = new File(currentDir, f.getName());
@@ -429,6 +521,7 @@ public class FileExplorerWindow extends JInternalFrame {
             clipboard.clear();
             clipboardCut = false;
             updateFileTable(currentDir);
+            refreshTreeModel();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error al pegar: " + ex.getMessage());
         }
@@ -444,6 +537,29 @@ public class FileExplorerWindow extends JInternalFrame {
                 copyDirectory(f, newPath);
             } else {
                 Files.copy(f.toPath(), newPath.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+    }
+
+    private void refreshTreeModel() {
+        folderTree = DesktopHelper.createSimulatedFileTree(currentUser);
+        Container parent = getContentPane();
+        if (parent != null) {
+            Component[] comps = parent.getComponents();
+            for (Component c : comps) {
+                if (c instanceof JSplitPane sp) {
+                    JScrollPane left = new JScrollPane(folderTree);
+                    sp.setLeftComponent(left);
+                    folderTree.setPreferredSize(new Dimension(240, 0));
+                    folderTree.addTreeSelectionListener(e -> {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) folderTree.getLastSelectedPathComponent();
+                        if (node != null) {
+                            currentDir = new File(buildPathFromNode(node));
+                            updateFileTable(currentDir);
+                        }
+                    });
+                    break;
+                }
             }
         }
     }

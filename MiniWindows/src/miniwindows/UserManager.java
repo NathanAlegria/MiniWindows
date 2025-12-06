@@ -97,4 +97,39 @@ public class UserManager {
         } catch (Exception e) {
         }
     }
+    
+    public static boolean deleteUser(String username) {
+        if (username.equalsIgnoreCase("Admin")) {
+            return false; 
+        }
+        
+        List<User> users = loadUsers();
+        boolean removed = users.removeIf(user -> user.getUsername().equalsIgnoreCase(username));
+        
+        if (removed) {
+            saveUsers(users);
+            deleteUserDirectory(username);
+            return true;
+        }
+        return false;
+    }
+    
+    private static void deleteUserDirectory(String username) {
+        File userDir = new File(Z_ROOT + username);
+        if (userDir.exists()) {
+            deleteDirectoryRecursively(userDir);
+        }
+    }
+    
+    private static void deleteDirectoryRecursively(File dir) {
+        if (dir.isDirectory()) {
+            File[] children = dir.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    deleteDirectoryRecursively(child);
+                }
+            }
+        }
+        dir.delete();
+    }
 }

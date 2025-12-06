@@ -10,12 +10,13 @@ import javax.swing.SwingUtilities;
  *
  * @author Nathan
  */
+
 public class MiniWindows {
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) { 
         // TODO code application logic here
         SwingUtilities.invokeLater(() -> {
             new Login().setVisible(true); 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
  *
  * @author Nathan
  */
+
 public class ReproductorGUI extends JInternalFrame {
 
     private User currentUser;
@@ -56,13 +57,12 @@ public class ReproductorGUI extends JInternalFrame {
         playlistList = new JList<>(playlistModel);
         playlistList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        loadPlaylistFromUserFolder(); // carga canciones
-        setupUI(); // crea interfaz
+        loadPlaylistFromUserFolder();
+        setupUI();
 
         setSize(700, 450);
         setVisible(true);
 
-        // ----------------- Actualizar carátula y lista al iniciar -----------------
         SwingUtilities.invokeLater(() -> {
             setCoverImagePlay();
             playlistList.setModel(playlistModel);
@@ -77,7 +77,6 @@ public class ReproductorGUI extends JInternalFrame {
         getContentPane().setBackground(Color.BLACK);
         setLayout(new BorderLayout());
 
-        // Panel izquierdo
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
@@ -106,7 +105,6 @@ public class ReproductorGUI extends JInternalFrame {
 
         leftPanel.add(imagePanel);
 
-        // Barra de progreso
         JPanel progressPanel = new JPanel(new BorderLayout());
         progressPanel.setBackground(new Color(240, 240, 240));
         progressPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -121,7 +119,6 @@ public class ReproductorGUI extends JInternalFrame {
 
         leftPanel.add(progressPanel);
 
-        // Botones de control
         JPanel controlWrapper = new JPanel(new BorderLayout());
         controlWrapper.setBackground(new Color(200, 200, 200));
         controlWrapper.setMinimumSize(new Dimension(100, 60));
@@ -146,7 +143,6 @@ public class ReproductorGUI extends JInternalFrame {
         leftPanel.add(Box.createVerticalGlue());
         leftPanel.add(controlWrapper);
 
-        // Panel derecho
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
         rightPanel.setBackground(new Color(230, 230, 250));
@@ -169,7 +165,6 @@ public class ReproductorGUI extends JInternalFrame {
         scroll.setBorder(BorderFactory.createEmptyBorder());
         rightPanel.add(scroll, BorderLayout.CENTER);
 
-        // JSplitPane
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
         splitPane.setResizeWeight(0.3);
         splitPane.setDividerSize(5);
@@ -181,7 +176,6 @@ public class ReproductorGUI extends JInternalFrame {
         centerPanel.add(splitPane);
         add(centerPanel, BorderLayout.CENTER);
 
-        // Listeners
         playPauseButton.addActionListener(e -> togglePlayPause());
         stopButton.addActionListener(e -> stopMusic());
         nextButton.addActionListener(e -> playNext());
@@ -216,7 +210,6 @@ public class ReproductorGUI extends JInternalFrame {
                 if (currentFile != null && totalFrames > 0) {
                     boolean wasPlaying = isPlaying;
 
-                    // Detener la reproducción actual sin reiniciar loadFileAtCurrentIndex
                     if (player != null) {
                         player.close();
                     }
@@ -281,7 +274,7 @@ public class ReproductorGUI extends JInternalFrame {
 
     private void loadPlaylistFromUserFolder() {
         try {
-            File musicDir = new File("Z_ROOT" + File.separator + currentUser.getUsername() + File.separator + "Musica");
+            File musicDir = new File("Z_ROOT" + File.separator + currentUser.getUsername() + File.separator + "Música");
             if (!musicDir.exists()) {
                 musicDir.mkdirs();
             }
@@ -303,7 +296,7 @@ public class ReproductorGUI extends JInternalFrame {
 
     public void loadFromFile(File f) {
         try {
-            File musicDir = new File("Z_ROOT" + File.separator + currentUser.getUsername() + File.separator + "Musica");
+            File musicDir = new File("Z_ROOT" + File.separator + currentUser.getUsername() + File.separator + "Música");
             if (!musicDir.exists()) {
                 musicDir.mkdirs();
             }
@@ -341,8 +334,8 @@ public class ReproductorGUI extends JInternalFrame {
             durationLabel.setText("00:00");
             totalFrames = 0;
             totalMillis = 0;
-            pausedFrame = 0; // reiniciar barra
-            playedMillis = 0; // reiniciar barra
+            pausedFrame = 0;
+            playedMillis = 0;
             return;
         }
 
@@ -350,7 +343,6 @@ public class ReproductorGUI extends JInternalFrame {
         nowPlayingLabel.setText("Now Playing: " + currentFile.getName());
         setCoverImagePlay();
 
-        // Calcular duración y frames
         try (FileInputStream fis = new FileInputStream(currentFile)) {
             Bitstream bitstream = new Bitstream(fis);
             totalFrames = 0;
@@ -369,7 +361,6 @@ public class ReproductorGUI extends JInternalFrame {
             e.printStackTrace();
         }
 
-        // Reiniciar barra al cambiar de canción
         pausedFrame = 0;
         playedMillis = 0;
         updateProgress();
@@ -411,7 +402,6 @@ public class ReproductorGUI extends JInternalFrame {
                         pausedFrame += evt.getFrame();
                         playedMillis = (long) pausedFrame * 26L;
 
-                        // --- CORRECCIÓN 3: Solo avanzar si isPlaying sigue siendo true ---
                         SwingUtilities.invokeLater(() -> {
                             if (isPlaying) {
                                 playNext();
@@ -470,14 +460,11 @@ public class ReproductorGUI extends JInternalFrame {
             return;
         }
 
-        // Detener canción actual
         stopMusic();
 
-        // Cambiar de canción
         currentIndex = (currentIndex + 1) % playlist.size();
         loadFileAtCurrentIndex();
 
-        // Reproducir la nueva canción
         playMusic();
     }
 

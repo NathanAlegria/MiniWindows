@@ -9,6 +9,8 @@ import java.awt.*;
 import java.net.URL;
 import java.util.List;
 
+
+
 /**
  *
  * @author Nathan
@@ -31,8 +33,8 @@ public class Login extends JFrame {
 
         setTitle("Mini-Windows - Iniciar Sesión");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setUndecorated(true); 
-        setResizable(false);   
+        setUndecorated(true);
+        setResizable(false);    
 
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
@@ -104,7 +106,7 @@ public class Login extends JFrame {
         btnLogin.setFocusPainted(false);
         btnLogin.setBorderPainted(false);
 
-        JButton btnOtherUser = new JButton("Otro usuario / Crear nuevo");
+        JButton btnOtherUser = new JButton("Cambiar Usuario");
         btnOtherUser.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnOtherUser.setForeground(Color.WHITE);
         btnOtherUser.setOpaque(false);
@@ -146,29 +148,18 @@ public class Login extends JFrame {
         List<User> userList = UserManager.getUsers();
 
         if (userList.isEmpty()) {
-            usersDisplay.add(new JLabel("No hay usuarios. Cree uno nuevo."));
+            usersDisplay.add(new JLabel("No hay usuarios."));
         } else {
             for (User user : userList) {
                 usersDisplay.add(createUserIconPanel(user.getUsername()));
             }
         }
 
-        JButton btnCreate = new JButton("Crear Nuevo Usuario");
-        btnCreate.setForeground(Color.WHITE);
-        btnCreate.setOpaque(false);
-        btnCreate.setContentAreaFilled(false);
-        btnCreate.setBorderPainted(false);
-        btnCreate.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCreate.addActionListener(e -> showCreateUserDialog());
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.insets = new Insets(30, 0, 18, 0);
         selectionPanel.add(usersDisplay, gbc);
-
-        gbc.gridy = 1;
-        selectionPanel.add(btnCreate, gbc);
 
         JButton btnBack = new JButton("← Volver a Login");
         btnBack.setOpaque(false);
@@ -240,53 +231,6 @@ public class Login extends JFrame {
                     "Error de Credenciales", JOptionPane.ERROR_MESSAGE);
             if (txtPassword != null) {
                 txtPassword.setText("");
-            }
-        }
-    }
-
-    private void showCreateUserDialog() {
-        JTextField userField = new JTextField(12);
-        JPasswordField passField = new JPasswordField(12);
-        passField.setEchoChar('•');
-
-        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
-        panel.add(new JLabel("Nombre de Usuario:"));
-        panel.add(userField);
-        panel.add(new JLabel("Contraseña (5 chars EXACTOS, 1 Mayús., 1 Signo Esp.):"));
-        panel.add(passField);
-
-        int result = JOptionPane.showConfirmDialog(this, panel,
-                "Crear Nuevo Usuario", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (result == JOptionPane.OK_OPTION) {
-            String newUsername = userField.getText().trim();
-            String newPassword = new String(passField.getPassword());
-
-            if (newUsername.isEmpty() || newPassword.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Usuario y contraseña no pueden estar vacíos.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (!Password.isValid(newPassword)) {
-                JOptionPane.showMessageDialog(this,
-                        "La contraseña NO cumple los requisitos:\n" + Password.getErrorReason(newPassword),
-                        "Error de Validación de Contraseña", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (UserManager.createUser(newUsername, newPassword)) {
-                JOptionPane.showMessageDialog(this,
-                        "Usuario '" + newUsername + "' creado exitosamente. Ahora inicie sesión.",
-                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-                cardPanel.remove(1);
-                cardPanel.add(createUserSelectionPanel(), "USER_SELECTION");
-                cardLayout.show(cardPanel, "USER_SELECTION");
-
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "El nombre de usuario '" + newUsername + "' ya existe.",
-                        "Error de Creación", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

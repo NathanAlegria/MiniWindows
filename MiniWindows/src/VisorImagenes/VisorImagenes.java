@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-
 package VisorImagenes;
 
 import miniwindows.User;
@@ -19,7 +18,7 @@ import java.util.List;
 /**
  *
  * @author Nathan
- */ 
+ */
 public class VisorImagenes extends JPanel {
 
     private final User currentUser;
@@ -36,8 +35,9 @@ public class VisorImagenes extends JPanel {
 
     public VisorImagenes(User user) {
         this.currentUser = user;
+        // La ruta debe ser *exactamente* "Mis Imágenes"
         this.imagesDir = new File("Z_ROOT" + File.separator + currentUser.getUsername()
-                + File.separator + "Imagenes");
+                + File.separator + "Mis Imágenes"); 
 
         if (!imagesDir.exists()) {
             imagesDir.mkdirs();
@@ -45,14 +45,12 @@ public class VisorImagenes extends JPanel {
 
         setLayout(new BorderLayout());
 
-        // Imagen grande
         imageLabel = new JLabel("", SwingConstants.CENTER);
         imageLabel.setPreferredSize(new Dimension(800, 500));
         imageLabel.setBackground(Color.BLACK);
         imageLabel.setOpaque(true);
         add(imageLabel, BorderLayout.CENTER);
 
-        // Panel de botones superiores
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         prevButton = new JButton("⏮️ Anterior");
         nextButton = new JButton("⏭️ Siguiente");
@@ -63,7 +61,6 @@ public class VisorImagenes extends JPanel {
         topPanel.add(nextButton);
         add(topPanel, BorderLayout.NORTH);
 
-        // Panel miniaturas tipo "islas"
         thumbnailPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         thumbnailScroll = new JScrollPane(
                 thumbnailPanel,
@@ -73,12 +70,10 @@ public class VisorImagenes extends JPanel {
         thumbnailScroll.setPreferredSize(new Dimension(100, 150));
         add(thumbnailScroll, BorderLayout.SOUTH);
 
-        // Eventos
         prevButton.addActionListener(e -> showPrevious());
         nextButton.addActionListener(e -> showNext());
         addButton.addActionListener(e -> addImage());
 
-        // Cuando la ventana cambia tamaño, actualiza la imagen
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -97,9 +92,6 @@ public class VisorImagenes extends JPanel {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // CARGA DE IMÁGENES
-    // ---------------------------------------------------------------------
     private void loadImages() {
         images.clear();
         File[] files = imagesDir.listFiles((dir, name) -> name.matches(".*\\.(png|jpg|jpeg|gif|bmp)$"));
@@ -108,9 +100,6 @@ public class VisorImagenes extends JPanel {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // MINIATURAS
-    // ---------------------------------------------------------------------
     private void loadThumbnails() {
         thumbnailPanel.removeAll();
 
@@ -151,9 +140,6 @@ public class VisorImagenes extends JPanel {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // MOSTRAR IMAGEN PRINCIPAL
-    // ---------------------------------------------------------------------
     private void updateImage() {
         if (images.isEmpty() || currentIndex < 0 || currentIndex >= images.size()) {
             imageLabel.setIcon(null);
@@ -190,9 +176,6 @@ public class VisorImagenes extends JPanel {
         );
     }
 
-    // ---------------------------------------------------------------------
-    // NAVEGACIÓN
-    // ---------------------------------------------------------------------
     private void showPrevious() {
         if (images.isEmpty()) return;
         currentIndex = (currentIndex - 1 + images.size()) % images.size();
@@ -205,9 +188,6 @@ public class VisorImagenes extends JPanel {
         updateImage();
     }
 
-    // ---------------------------------------------------------------------
-    // AÑADIR IMÁGENES
-    // ---------------------------------------------------------------------
     private void addImage() {
         JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(true);
@@ -243,4 +223,3 @@ public class VisorImagenes extends JPanel {
         updateImage();
     }
 }
-
