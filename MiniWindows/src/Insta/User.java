@@ -30,6 +30,7 @@ class User implements Serializable {
     private int edad;
     private String fotoPath;
     private LocalDate joinDate;
+    private boolean isActive;
     private List<Post> posts;
     private List<String> followers;
     private List<String> followings;
@@ -42,6 +43,7 @@ class User implements Serializable {
         this.edad = edad;
         this.fotoPath = fotoPath;
         this.joinDate = LocalDate.now();
+        this.isActive = true;
         this.posts = new ArrayList<>();
         this.followers = new ArrayList<>();
         this.followings = new ArrayList<>();
@@ -58,6 +60,13 @@ class User implements Serializable {
     public List<Post> getPosts() { return posts; }
     public List<String> getFollowers() { return followers; }
     public List<String> getFollowings() { return followings; }
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
+    }
 
     // Métodos de acción
     public void addPost(Post post) { this.posts.add(0, post); } // Añadir al inicio de la lista
