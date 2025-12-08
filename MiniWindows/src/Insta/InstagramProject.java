@@ -11,6 +11,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
@@ -481,62 +483,104 @@ public class InstagramProject extends JPanel {
     }
 
     // Tarjeta inicial para la búsqueda de perfiles (EXISTENTE)
+    // Reemplaza tu método crearProfileCardSearch() con este:
     private JPanel crearProfileCardSearch() {
-        JPanel searchPanel = new JPanel(new GridBagLayout());
+        JPanel searchPanel = new JPanel(new BorderLayout());
         searchPanel.setBackground(BG_COLOR);
-        searchPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
 
-        JPanel inputPanel = new JPanel();
-        inputPanel.setBackground(BG_COLOR);
-        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        // --- 1. Panel Superior (Input y Botón) ---
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.setBackground(BG_COLOR);
+        topPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel title = new JLabel("Buscar Perfil", SwingConstants.CENTER);
+        JLabel title = new JLabel("Buscar Personas", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
         title.setForeground(TEXT_COLOR);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setBorder(new EmptyBorder(0, 0, 20, 0));
 
-        JTextField txtSearchUser = styledTextField("Username a buscar");
-        txtSearchUser.setMaximumSize(new Dimension(300, 40));
+        JTextField txtSearchUser = styledTextField("Escribe un username...");
+        txtSearchUser.setMaximumSize(new Dimension(400, 40));
         txtSearchUser.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton btnSearch = styledButton("Buscar");
         btnSearch.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnSearch.setMaximumSize(new Dimension(300, 40));
-        btnSearch.setBorder(new EmptyBorder(10, 0, 0, 0));
+        btnSearch.setMaximumSize(new Dimension(400, 40));
 
+        topPanel.add(title);
+        topPanel.add(Box.createVerticalStrut(20));
+        topPanel.add(txtSearchUser);
+        topPanel.add(Box.createVerticalStrut(10));
+        topPanel.add(btnSearch);
+
+        // --- 2. Panel de Resultados (Centro con Scroll) ---
+        JPanel resultsPanel = new JPanel();
+        resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
+        resultsPanel.setBackground(BG_COLOR);
+
+        JScrollPane scrollResults = new JScrollPane(resultsPanel);
+        scrollResults.setBorder(null);
+        scrollResults.getVerticalScrollBar().setBackground(BG_COLOR);
+        scrollResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // Acción del Botón Buscar
         btnSearch.addActionListener(e -> {
-            String targetUsername = txtSearchUser.getText().trim();
-            if (targetUsername.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingresa un nombre de usuario.", "Error", JOptionPane.ERROR_MESSAGE);
+            String texto = txtSearchUser.getText().trim();
+            if (texto.isEmpty() || texto.equals("Escribe un username...")) {
+                JOptionPane.showMessageDialog(this, "Escribe algo para buscar.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            User targetUser = userManager.getUserByUsername(targetUsername);
+            // 1. Limpiar resultados anteriores
+            resultsPanel.removeAll();
 
-            if (targetUser != null) {
-                mostrarPerfil(targetUser);
-                txtSearchUser.setText(""); // Limpiar el campo
+            // 2. Buscar en el UserManager (usando el nuevo método)
+            List<User> encontrados = userManager.buscarUsuarios(texto);
+
+            if (encontrados.isEmpty()) {
+                JLabel lblNo = new JLabel("No se encontraron usuarios con: " + texto);
+                lblNo.setForeground(Color.GRAY);
+                lblNo.setAlignmentX(Component.CENTER_ALIGNMENT);
+                resultsPanel.add(lblNo);
             } else {
-                JOptionPane.showMessageDialog(this, "Usuario no encontrado: " + targetUsername, "Búsqueda Fallida", JOptionPane.WARNING_MESSAGE);
+                // 3. Llenar la lista
+                for (User u : encontrados) {
+                    // Determinar estado (LO SIGO / NO LO SIGUES)
+                    String estado = loggedUser.isFollowing(u.getUsername()) ? "LO SIGO" : "NO LO SIGUES";
+                    String textoResultado = u.getUsername() + " – " + estado;
+
+                    // Crear un botón o panel clicable para el resultado
+                    JButton itemBtn = new JButton(textoResultado);
+                    itemBtn.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                    itemBtn.setForeground(TEXT_COLOR);
+                    itemBtn.setBackground(INPUT_BG);
+                    itemBtn.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                    itemBtn.setMaximumSize(new Dimension(400, 50));
+                    itemBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    itemBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    itemBtn.setFocusPainted(false);
+
+                    // Al hacer clic, ir al perfil
+                    itemBtn.addActionListener(ev -> {
+                        mostrarPerfil(u);
+                    });
+
+                    resultsPanel.add(itemBtn);
+                    resultsPanel.add(Box.createVerticalStrut(10)); // Espacio entre items
+                }
             }
+
+            resultsPanel.revalidate();
+            resultsPanel.repaint();
         });
 
-        inputPanel.add(title);
-        inputPanel.add(txtSearchUser);
-        inputPanel.add(Box.createVerticalStrut(15));
-        inputPanel.add(btnSearch);
+        searchPanel.add(topPanel, BorderLayout.NORTH);
+        searchPanel.add(scrollResults, BorderLayout.CENTER);
 
-        searchPanel.add(inputPanel);
         return searchPanel;
     }
-
-    /**
-     * Muestra el perfil del usuario objetivo dinámicamente. (EXISTENTE)
-     */
     private void mostrarPerfil(User targetUser) {
         // Eliminar vistas anteriores y añadir la nueva
-        profileCardContainer.removeAll();
 
         // **IMPORTANTE**: Recargar el targetUser para asegurar que los contadores (followers) estén actualizados
         User refreshedTargetUser = userManager.getUserByUsername(targetUser.getUsername());
@@ -548,12 +592,48 @@ public class InstagramProject extends JPanel {
         JPanel profileView = buildProfileView(refreshedTargetUser);
         profileCardContainer.add(profileView, "PROFILE_VIEW");
 
+        for (Component comp : profileCardContainer.getComponents()) {
+        // Asumiendo que SÓLO la vista del perfil tiene un nombre específico
+        if (comp.getName() != null && comp.getName().equals("PROFILE_VIEW_CONTENT")) {
+            profileCardContainer.remove(comp);
+            break; 
+            }
+        }
+    
+    // 3. Añadir la nueva vista (y le damos un nombre específico)
+        profileView.setName("PROFILE_VIEW_CONTENT"); 
+        profileCardContainer.add(profileView, "PROFILE_VIEW"); // La etiqueta del CardLayout sigue siendo "PROFILE_VIEW"
+
+        // 4. Mostrar y actualizar
         CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
-        cl.show(profileCardContainer, "PROFILE_VIEW");
+        cl.show(profileCardContainer, "PROFILE_VIEW"); 
 
         profileCardContainer.revalidate();
         profileCardContainer.repaint();
+        }
+    
+    private ImageIcon cargarImagenCuadrada(String ruta, int tam) {
+    try {
+        BufferedImage original = ImageIO.read(new File(ruta));
+
+        // Crear imagen cuadrada recortando el centro
+        int size = Math.min(original.getWidth(), original.getHeight());
+        int x = (original.getWidth() - size) / 2;
+        int y = (original.getHeight() - size) / 2;
+
+        BufferedImage cuadrada = original.getSubimage(x, y, size, size);
+
+        // Escalar al tamaño deseado
+        Image esc = cuadrada.getScaledInstance(tam, tam, Image.SCALE_SMOOTH);
+
+        return new ImageIcon(esc);
+
+    } catch (Exception e) {
+        System.out.println("ERROR cargando imagen: " + e.getMessage());
+        return null;
     }
+}
+
 
     /**
      * Construye la vista completa de un perfil (similar al diseño de
@@ -569,30 +649,42 @@ public class InstagramProject extends JPanel {
         headerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // 1.1. Foto de Perfil (Izquierda)
+        int photoSize = 120;
+
+// Crear JLabel para la foto
         JLabel lblPhoto = new JLabel();
-        try {
-            File imageFile = new File(targetUser.getFotoPath());
-            if (imageFile.exists()) {
-                // Simplificado: usar texto si la ruta no existe realmente
-                lblPhoto.setText("IMG");
-                lblPhoto.setFont(new Font("SansSerif", Font.BOLD, 18));
-                lblPhoto.setForeground(TEXT_COLOR);
-                lblPhoto.setPreferredSize(new Dimension(100, 100));
-                lblPhoto.setHorizontalAlignment(SwingConstants.CENTER);
-                lblPhoto.setBorder(BorderFactory.createLineBorder(new Color(255, 105, 180), 3, true));
-            } else {
-                lblPhoto.setText("Foto");
-                lblPhoto.setForeground(TEXT_COLOR);
-                lblPhoto.setPreferredSize(new Dimension(100, 100));
-                lblPhoto.setHorizontalAlignment(SwingConstants.CENTER);
-                lblPhoto.setBorder(BorderFactory.createLineBorder(new Color(255, 105, 180), 3, true));
-            }
-        } catch (Exception e) {
-            lblPhoto.setText("Foto Error");
-            lblPhoto.setForeground(TEXT_COLOR);
-            lblPhoto.setPreferredSize(new Dimension(100, 100));
+        lblPhoto.setPreferredSize(new Dimension(photoSize, photoSize));
+        lblPhoto.setMaximumSize(new Dimension(photoSize, photoSize));
+        lblPhoto.setMinimumSize(new Dimension(photoSize, photoSize));
+        lblPhoto.setHorizontalAlignment(SwingConstants.CENTER);
+        lblPhoto.setVerticalAlignment(SwingConstants.CENTER);
+
+        // Borde cuadrado del mismo tamaño que el JLabel
+        lblPhoto.setBorder(BorderFactory.createLineBorder(new Color(255, 105, 39), 3));
+
+        // Cargar imagen cuadrada escalada al tamaño interior del JLabel
+        ImageIcon icon = cargarImagenCuadrada(targetUser.getFotoPath(), photoSize - 6); 
+        // 6 = grosor del borde para que no corte la imagen
+        if (icon != null) {
+            lblPhoto.setIcon(icon);
+            lblPhoto.setText("");
+        } else {
+            lblPhoto.setText("IMG");
             lblPhoto.setHorizontalAlignment(SwingConstants.CENTER);
         }
+
+        // Wrapper para centrar
+        JPanel photoWrapper = new JPanel(new BorderLayout());
+        photoWrapper.setPreferredSize(new Dimension(photoSize, photoSize));
+        photoWrapper.setBackground(BG_COLOR);
+        photoWrapper.add(lblPhoto, BorderLayout.CENTER);
+
+        headerPanel.add(photoWrapper, BorderLayout.WEST);
+
+
+
+
+
 
         // 1.2. Info General (Centro)
         JPanel infoPanel = new JPanel();
@@ -633,52 +725,75 @@ public class InstagramProject extends JPanel {
         infoPanel.add(createDetailLabel("Edad: " + targetUser.getEdad()));
         infoPanel.add(createDetailLabel("Miembro desde: " + targetUser.getJoinDate()));
 
-        // 1.3. Botones de Acción (Derecha)
-        JPanel actionPanel = new JPanel();
-        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
-        actionPanel.setBackground(BG_COLOR);
-        actionPanel.setAlignmentY(Component.TOP_ALIGNMENT);
 
-        // Lógica de SEGUIR/DEJAR DE SEGUIR
-        if (loggedUser != null && !targetUser.getUsername().equals(loggedUser.getUsername())) {
-            boolean isFollowing = loggedUser.isFollowing(targetUser.getUsername());
+    // 1.3. Botones de Acción (Derecha)
+    JPanel actionPanel = new JPanel();
+    actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
+    actionPanel.setBackground(BG_COLOR);
+    actionPanel.setAlignmentY(Component.TOP_ALIGNMENT);
 
-            JButton btnFollowToggle = styledButton(isFollowing ? "Siguiendo" : "Seguir");
-            btnFollowToggle.setPreferredSize(new Dimension(180, 30));
-            btnFollowToggle.setMinimumSize(new Dimension(180, 30));
-            btnFollowToggle.setMaximumSize(new Dimension(180, 30));
-            btnFollowToggle.setAlignmentX(Component.LEFT_ALIGNMENT);
+    // Lógica para mostrar botones solo si no es mi propio perfil
+    if (loggedUser != null && !targetUser.getUsername().equals(loggedUser.getUsername())) {
+        boolean isFollowing = loggedUser.isFollowing(targetUser.getUsername());
 
-            if (isFollowing) {
-                btnFollowToggle.setBackground(new Color(54, 54, 54));
-                btnFollowToggle.setText("Siguiendo");
-            } else {
-                btnFollowToggle.setBackground(BTN_BLUE);
-                btnFollowToggle.setText("Seguir");
-            }
+        // Botón principal (SEGUIR / DEJAR DE SEGUIR)
+        JButton btnAction = styledButton(isFollowing ? "DEJAR DE SEGUIR" : "SEGUIR");
+        btnAction.setPreferredSize(new Dimension(200, 35));
+        btnAction.setMaximumSize(new Dimension(200, 35));
+        btnAction.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            btnFollowToggle.addActionListener(e -> {
-                userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
-
-                // CORRECCIÓN: Volver a cargar el usuario logueado para que su lista 'followings' esté actualizada
-                User updatedLoggedUser = userManager.getUserByUsername(loggedUser.getUsername());
-                if (updatedLoggedUser != null) {
-                    loggedUser = updatedLoggedUser;
-                }
-
-                // Recargar el perfil para actualizar los contadores y el estado del botón
-                mostrarPerfil(targetUser);
-            });
-            actionPanel.add(btnFollowToggle);
-            actionPanel.add(Box.createVerticalStrut(10));
-        } else if (loggedUser != null && targetUser.getUsername().equals(loggedUser.getUsername())) {
-            // Es el perfil propio
-            JLabel lblOwnProfile = new JLabel("Este es tu perfil");
-            lblOwnProfile.setForeground(Color.GRAY);
-            lblOwnProfile.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            actionPanel.add(lblOwnProfile);
-            actionPanel.add(Box.createVerticalStrut(10));
+        // Estilos visuales según estado
+        if (isFollowing) {
+            btnAction.setBackground(new Color(54, 54, 54)); // Gris si ya lo sigo
+            btnAction.setForeground(TEXT_COLOR);
+        } else {
+            btnAction.setBackground(BTN_BLUE); // Azul si no lo sigo
         }
+
+        btnAction.addActionListener(e -> {
+            if (isFollowing) {
+                // Opción DEJAR DE SEGUIR con Confirmación
+                int respuesta = JOptionPane.showConfirmDialog(this, 
+                        "¿Estás seguro que quieres dejar de seguir a " + targetUser.getUsername() + "?",
+                        "Confirmar",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (respuesta == JOptionPane.YES_OPTION) {
+                    userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
+                    // Recargar usuario local y actualizar vista
+                    loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
+                    mostrarPerfil(targetUser); 
+                }
+            } else {
+                // Opción SEGUIR (Directo)
+                userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
+                // Recargar usuario local y actualizar vista
+                loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
+                mostrarPerfil(targetUser);
+            }
+        });
+
+        actionPanel.add(btnAction);
+        actionPanel.add(Box.createVerticalStrut(10));
+
+    } else if (loggedUser != null && targetUser.getUsername().equals(loggedUser.getUsername())) {
+        JLabel lblOwn = new JLabel("(Tu Perfil)");
+        lblOwn.setForeground(Color.GRAY);
+        actionPanel.add(lblOwn);
+    }
+
+    // Botón "VER SUS TWEETS" (Decorativo, ya que abajo se muestran)
+    // Aunque el grid ya los muestra, agregamos el texto visual para cumplir con el requisito
+    JLabel lblVerTweets = new JLabel("⬇ VER SUS TWEETS ⬇");
+    lblVerTweets.setFont(new Font("SansSerif", Font.BOLD, 12));
+    lblVerTweets.setForeground(Color.GRAY);
+    lblVerTweets.setAlignmentX(Component.LEFT_ALIGNMENT);
+    lblVerTweets.setBorder(new EmptyBorder(15, 0, 0, 0));
+    
+    actionPanel.add(lblVerTweets);
+    
+    // ... (El resto del código donde se agrega headerPanel al profilePanel sigue igual) ...
 
         // Ensamblar Header
         headerPanel.add(lblPhoto, BorderLayout.WEST);
@@ -701,61 +816,88 @@ public class InstagramProject extends JPanel {
 
         contentPanel.add(tabBar, BorderLayout.NORTH);
 
-        // 2.2. Posts Grid 
-        JPanel gridWrapper = new JPanel(new GridBagLayout());
-        gridWrapper.setBackground(BG_COLOR);
+        // --- En buildProfileView(User targetUser) ---
 
+        // 2.2. Posts Grid (MODIFICADO)
         JPanel postsGrid = new JPanel(new GridLayout(0, 3, 5, 5));
         postsGrid.setBackground(BG_COLOR);
         postsGrid.setBorder(new EmptyBorder(10, 5, 10, 5));
-
+        
+        postsGrid.setPreferredSize(new Dimension(580, postsGrid.getPreferredSize().height));
         if (targetUser.getPosts().isEmpty()) {
+            // Si no hay posts, añadimos el mensaje centrado. Usaremos un Panel para centrar.
+            JPanel centerNoPosts = new JPanel(new GridBagLayout());
+            centerNoPosts.setBackground(BG_COLOR);
             JLabel noPosts = new JLabel("Este usuario aún no tiene publicaciones.", SwingConstants.CENTER);
             noPosts.setForeground(Color.GRAY);
             noPosts.setFont(new Font("SansSerif", Font.ITALIC, 14));
-            gridWrapper.add(noPosts);
+            centerNoPosts.add(noPosts);
+            contentPanel.add(centerNoPosts, BorderLayout.CENTER);
+
         } else {
             for (Post post : targetUser.getPosts()) {
                 postsGrid.add(crearPostMiniatura(post));
             }
+
             JScrollPane scrollPane = new JScrollPane(postsGrid);
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
             scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setBorder(null);
             scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.fill = GridBagConstraints.BOTH;
-            gbc.weightx = 1.0;
-            gbc.weighty = 1.0;
-            gridWrapper.add(scrollPane, gbc);
+            // ✅ Añadir el scrollPane directamente al centro del contentPanel (BorderLayout)
+            contentPanel.add(scrollPane, BorderLayout.CENTER); 
         }
 
-        contentPanel.add(gridWrapper, BorderLayout.CENTER);
+
         profilePanel.add(contentPanel, BorderLayout.CENTER);
 
         return profilePanel;
     }
 
-    // Crea una miniatura de post (cuadrado) para la cuadrícula del perfil (EXISTENTE)
+    // Crea una miniatura de post (cuadrado) para la cuadrícula del perfil
     private JPanel crearPostMiniatura(Post post) {
-        JPanel miniatura = new JPanel(new BorderLayout());
-        miniatura.setPreferredSize(new Dimension(150, 150));
-        miniatura.setBackground(INPUT_BG);
-        miniatura.setBorder(new LineBorder(BORDER_COLOR, 1));
+        final int MINI_SIZE = 190; // Tamaño de la miniatura (ajustado para un grid 3x en 600px de ancho)
 
-        JLabel lblImage = new JLabel("Post: " + post.getCaption().substring(0, Math.min(post.getCaption().length(), 15)) + "...", SwingConstants.CENTER);
-        lblImage.setForeground(Color.GRAY);
+        JPanel miniatura = new JPanel(new BorderLayout());
+        miniatura.setPreferredSize(new Dimension(MINI_SIZE, MINI_SIZE));
+        miniatura.setMaximumSize(new Dimension(MINI_SIZE, MINI_SIZE));
+        miniatura.setBackground(POST_BG);
+        miniatura.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JLabel lblImage = new JLabel();
+        lblImage.setHorizontalAlignment(SwingConstants.CENTER);
+        lblImage.setVerticalAlignment(SwingConstants.CENTER);
+        
+        // Cargar imagen cuadrada escalada
+        ImageIcon icon = cargarImagenCuadrada(post.getImagePath(), MINI_SIZE);
+
+        if (icon != null) {
+            lblImage.setIcon(icon);
+            lblImage.setText("");
+        } else {
+            lblImage.setText("❌");
+            lblImage.setForeground(Color.RED);
+            lblImage.setFont(new Font("SansSerif", Font.BOLD, 20));
+        }
 
         miniatura.add(lblImage, BorderLayout.CENTER);
 
-        miniatura.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        miniatura.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                JOptionPane.showMessageDialog(null, "Ver Post Completo: " + post.getCaption(), "Post", JOptionPane.INFORMATION_MESSAGE);
-            }
+        // Opcional: Agregar un efecto visual al pasar el mouse (Overlay)
+        // Puedes agregar aquí un MouseListener para mostrar detalles del post (likes, comentarios)
+        // al pasar el mouse, simulando el comportamiento de Instagram.
+        
+        // Ejemplo de funcionalidad (Click para ver el post completo, si existiera esa vista)
+        miniatura.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+         JOptionPane.showMessageDialog(miniatura, 
+            "Post de " + post.getUsername() + "\nDescripción: " + post.getCaption(), 
+            "Ver Post", 
+            JOptionPane.INFORMATION_MESSAGE);
+    }
         });
-
+        
         return miniatura;
     }
 
@@ -816,19 +958,31 @@ public class InstagramProject extends JPanel {
                     cardLayout.show(mainPanel, "LOGIN");
                 }
             } else if (cardName.equals("MY_PROFILE")) {
-                if (loggedUser != null) {
-                    // Navega a la vista de búsqueda de perfil, luego fuerza a mostrar el propio perfil
-                    cardLayout.show(mainPanel, "PROFILE_SEARCH");
-                    mostrarPerfil(loggedUser);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } else if (cardName.equals("PROFILE_SEARCH")) {
-                // Navega a la vista de búsqueda y resetea al panel de input
-                cardLayout.show(mainPanel, "PROFILE_SEARCH");
-                CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
-                cl.show(profileCardContainer, "SEARCH_INPUT");
+            if (loggedUser != null) {
+                // 1. Navega al panel de búsqueda principal
+                cardLayout.show(mainPanel, "PROFILE_SEARCH"); 
+
+                // 2. Ejecuta la lógica para mostrar el perfil del usuario logueado
+                // Es esencial que mostrarPerfil maneje correctamente el CardLayout interno
+                mostrarPerfil(loggedUser); 
             } else {
+                JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        
+        // LÓGICA PARA BÚSQUEDA (Te lleva al PROFILE_SEARCH y te muestra el input del buscador)
+        // LÓGICA PARA BÚSQUEDA (CardName: PROFILE_SEARCH)
+        else if (cardName.equals("PROFILE_SEARCH")) {
+            // 1. Navega al panel de búsqueda principal
+            cardLayout.show(mainPanel, "PROFILE_SEARCH");
+
+            // 2. RESETA la vista interna al panel de input
+            CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
+            cl.show(profileCardContainer, "SEARCH_INPUT");
+
+            profileCardContainer.revalidate();
+            profileCardContainer.repaint();
+        } else {
                 // Navegación normal (MAIN, CREATE_POST)
                 cardLayout.show(mainPanel, cardName);
             }

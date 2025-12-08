@@ -28,6 +28,10 @@ public class Post implements Serializable {
         this.likes = 0; // Inicialmente 0 likes
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     public String getImagePath() { return imagePath; }
     public String getCaption() { return caption; }
 }

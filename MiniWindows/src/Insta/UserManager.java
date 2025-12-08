@@ -71,6 +71,21 @@ public class UserManager {
         }
     }
     
+    // Agrega esto dentro de tu clase UserManager
+    public List<User> buscarUsuarios(String busqueda) {
+        List<User> resultados = new ArrayList<>();
+        // Convertimos a minúsculas para que 'Patito' y 'patito' sean iguales
+        String termino = busqueda.toLowerCase(); 
+
+        // CORRECCIÓN AQUÍ: Iteramos directamente sobre la lista 'users'
+        for (User u : users) {
+            if (u.getUsername().toLowerCase().contains(termino)) {
+                resultados.add(u);
+            }
+        }
+        return resultados;
+    }
+    
     public void saveUser(User user) {
         Optional<User> existingUser = users.stream()
             .filter(u -> u.getUsername().equals(user.getUsername()))
