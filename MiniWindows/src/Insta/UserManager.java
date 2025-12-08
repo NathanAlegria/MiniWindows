@@ -13,6 +13,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -134,6 +136,40 @@ public class UserManager {
      * @param followerUsername El usuario que sigue/deja de seguir (el logueado).
      * @param targetUsername El usuario objetivo.
      */
+    
+    // Dentro de la clase UserManager
+public List<Post> getAllRelevantPostsByDate(User loggedUser) {
+    if (loggedUser == null) {
+        return Collections.emptyList();
+    }
+
+    List<Post> allPosts = new ArrayList<>();
+
+    // 1. Agregar los posts propios
+    allPosts.addAll(loggedUser.getPosts());
+
+    // 2. Agregar los posts de los usuarios seguidos
+    for (String followedUsername : loggedUser.getFollowings()) {
+        try {
+            // ** CORRECCIÓN CLAVE: Usar getUserByUsername **
+            // Esto busca el objeto User completo en la lista 'users' cargada en memoria.
+            User followedUser = getUserByUsername(followedUsername); 
+            
+            if (followedUser != null) {
+                // Obtenemos los posts del usuario seguido que ya está cargado
+                allPosts.addAll(followedUser.getPosts());
+            }
+        } catch (Exception e) {
+            // El manejo de errores ahora es menos probable, pero lo mantenemos.
+            System.err.println("Error al cargar posts de " + followedUsername + ": " + e.getMessage());
+        }
+    }
+
+    // 3. Ordenar la lista combinada (asumiendo que Post tiene el método getDate())
+    allPosts.sort(Comparator.comparing(Post::getDate).reversed());
+
+    return allPosts;
+}
     public void toggleFollow(String followerUsername, String targetUsername) {
         User follower = getUserByUsername(followerUsername);
         User target = getUserByUsername(targetUsername);

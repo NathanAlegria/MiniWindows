@@ -18,6 +18,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -282,50 +283,367 @@ public class InstagramProject extends JPanel {
     }
 
     // --- PANEL PRINCIPAL (FEED) (EXISTENTE) ---
-    private JPanel crearPanelPrincipal() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_COLOR);
+    // --- PANEL PRINCIPAL (FEED) (MODIFICADO) ---
+private JPanel crearPanelPrincipal() {
+    JPanel panel = new JPanel(new BorderLayout());
+    panel.setBackground(BG_COLOR);
 
-        panel.add(crearSidebarDesktop(), BorderLayout.WEST);
+    panel.add(crearSidebarDesktop(), BorderLayout.WEST);
 
-        JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
-        contentAreaWrapper.setBackground(BG_COLOR);
+    JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
+    contentAreaWrapper.setBackground(BG_COLOR);
 
-        JPanel feedContent = new JPanel();
-        feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
-        feedContent.setBackground(BG_COLOR);
+    JPanel feedContent = new JPanel();
+    feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
+    feedContent.setBackground(BG_COLOR);
 
-        int feedWidth = 550;
-        feedContent.setPreferredSize(new Dimension(feedWidth, 600));
-        feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
+    int feedWidth = 550;
+    feedContent.setPreferredSize(new Dimension(feedWidth, 600));
+    feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
 
-        // Mensaje de feed vacío 
+    // ** Lógica del Feed **
+    loadFeedPosts(feedContent, feedWidth); 
+    // ^ Se llama a un nuevo método para cargar el contenido
+
+    JScrollPane scrollPane = new JScrollPane(feedContent);
+    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    scrollPane.setBorder(null);
+    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
+    gbc.anchor = GridBagConstraints.CENTER;
+    gbc.fill = GridBagConstraints.VERTICAL;
+
+    contentAreaWrapper.add(scrollPane, gbc);
+
+    panel.add(contentAreaWrapper, BorderLayout.CENTER);
+
+    return panel;
+}
+
+// --- NUEVO MÉTODO: Cargar y Mostrar el Feed ---
+private void loadFeedPosts(JPanel feedContent, int feedWidth) {
+    feedContent.removeAll(); 
+
+    if (loggedUser == null) {
+        JLabel err = new JLabel("Inicia sesión para ver el Feed.", SwingConstants.CENTER);
+        err.setForeground(TEXT_COLOR);
+        err.setAlignmentX(Component.CENTER_ALIGNMENT);
+        feedContent.add(err);
+        return;
+    }
+
+    // 1. Obtener todos los posts (propios y de seguidos)
+    // NOTA: Asumo que tienes un método getAllRelevantPostsByDate() en UserManager o PostManager
+    List<Post> allPosts = userManager.getAllRelevantPostsByDate(loggedUser); 
+
+    if (allPosts.isEmpty()) {
+        // Mensaje de feed vacío
         JLabel emptyMessage = new JLabel("<html><div style='text-align: center; width: " + (feedWidth - 50) + "px;'><b>¡Bienvenido!</b><br>Sigue a tus amigos para ver publicaciones.</div></html>", SwingConstants.CENTER);
         emptyMessage.setForeground(Color.GRAY);
         emptyMessage.setFont(new Font("SansSerif", Font.BOLD, 14));
         emptyMessage.setBorder(new EmptyBorder(50, 0, 0, 0));
         emptyMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
-
         feedContent.add(emptyMessage);
-
-        JScrollPane scrollPane = new JScrollPane(feedContent);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.fill = GridBagConstraints.VERTICAL;
-
-        contentAreaWrapper.add(scrollPane, gbc);
-
-        panel.add(contentAreaWrapper, BorderLayout.CENTER);
-
-        return panel;
+    } else {
+        // 2. Crear y añadir el componente visual para cada post
+        for (Post post : allPosts) {
+            JPanel postPanel = createPostFeedView(post, feedWidth - 50); // Ajustar ancho
+            postPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            feedContent.add(postPanel);
+            feedContent.add(Box.createVerticalStrut(20)); // Espacio entre posts
+        }
     }
+    
+    feedContent.revalidate();
+    feedContent.repaint();
+}
+
+// --- NUEVO MÉTODO: Vista Detallada de un Post para el Feed ---
+private JPanel createPostFeedView(Post post, int width) {
+    JPanel postPanel = new JPanel();
+    postPanel.setLayout(new BoxLayout(postPanel, BoxLayout.Y_AXIS));
+    postPanel.setBackground(POST_BG);
+    postPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
+    postPanel.setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
+
+    // 1. Cabecera (Username y Foto de Perfil)
+    JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+    header.setBackground(POST_BG);
+    header.setAlignmentX(Component.LEFT_ALIGNMENT);
+    
+    User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
+    
+    JLabel lblAuthor = new JLabel(post.getAuthorUsername());
+    lblAuthor.setFont(new Font("SansSerif", Font.BOLD, 16));
+    lblAuthor.setForeground(TEXT_COLOR);
+
+    JLabel lblProfilePic = new JLabel(cargarImagenCuadrada(postAuthor.getFotoPath(), 30));
+    
+    header.add(lblProfilePic);
+    header.add(lblAuthor);
+    postPanel.add(header);
+
+    // 2. Imagen del Post
+    int imageSize = width; // La imagen ocupa todo el ancho del post
+    JLabel lblImage = new JLabel();
+    ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imageSize);
+    if (postIcon != null) {
+        lblImage.setIcon(postIcon);
+    } else {
+        lblImage.setText("No Image");
+        lblImage.setForeground(Color.RED);
+    }
+    lblImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+    postPanel.add(lblImage);
+
+    // 3. Botones (Like y Comentar)
+    JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
+    actions.setBackground(POST_BG);
+    actions.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Botón de Like
+    JButton btnLike = createIconButton("💖", 24); 
+    // Necesitas un método para crear un botón con un ícono o emoji
+    btnLike.setForeground(post.isLikedBy(loggedUser.getUsername()) ? Color.RED : TEXT_COLOR);
+    btnLike.addActionListener(e -> handleLikeAction(post, btnLike));
+    actions.add(btnLike);
+    
+    // Contador de Likes
+    JLabel lblLikes = new JLabel(post.getLikesCount() + " likes");
+    lblLikes.setForeground(TEXT_COLOR);
+    lblLikes.setFont(new Font("SansSerif", Font.PLAIN, 12));
+    actions.add(lblLikes);
+    actions.add(Box.createHorizontalStrut(20));
+
+
+    // Botón de Comentar (Asume un ícono de burbuja de diálogo "💬")
+    JButton btnComment = createIconButton("💬", 24);
+    btnComment.addActionListener(e -> showCommentDialog(post));
+    actions.add(btnComment);
+    
+    postPanel.add(actions);
+
+    // 4. Descripción (Caption)
+    JTextArea txtCaption = new JTextArea(post.getCaption());
+    txtCaption.setEditable(false);
+    txtCaption.setBackground(POST_BG);
+    txtCaption.setForeground(TEXT_COLOR);
+    txtCaption.setLineWrap(true);
+    txtCaption.setWrapStyleWord(true);
+    txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
+    txtCaption.setBorder(new EmptyBorder(5, 15, 10, 15));
+    txtCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    postPanel.add(txtCaption);
+
+    return postPanel;
+}
+
+// --- NUEVO MÉTODO: Crea el panel con el grid de posts ---
+private JButton createIconButton(String text, int size) {
+    JButton btn = new JButton(text);
+    btn.setFont(new Font("SansSerif", Font.BOLD, size));
+    btn.setForeground(TEXT_COLOR); // Color del texto (o del emoji)
+    btn.setBackground(POST_BG); // Fondo del post (para que se mezcle)
+    btn.setBorderPainted(false); // Quitar el borde
+    btn.setContentAreaFilled(false); // Quitar el color de fondo del área de contenido
+    btn.setFocusPainted(false); // Quitar el recuadro de foco
+    btn.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Cursor de mano al pasar por encima
+    return btn;
+}
+
+
+// También podrías necesitar un createStatPanel para las stats del perfil
+
+// ** MODIFICACIÓN EN createPostGridPanel (ahora crearPostsGrid) **
+// Debe devolver SÓLO el JPanel con las miniaturas, no el JScrollPane.
+
+// --- REEMPLAZO COMPLETO DEL MÉTODO crearPostsGrid ---
+
+private JPanel crearPostsGrid(User targetUser) {
+    List<Post> userPosts = targetUser.getPosts();
+    
+    // Si no hay posts, devolvemos el wrapper centrado (tal como lo tienes)
+    if (userPosts.isEmpty()) {
+        JLabel noPosts = new JLabel("No hay publicaciones aún.", SwingConstants.CENTER);
+        noPosts.setForeground(Color.GRAY);
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(BG_COLOR);
+        wrapper.add(noPosts);
+        return wrapper;
+    }
+
+    // --- 1. Panel de Posts: Usa GridBagLayout para control total ---
+    JPanel gridPanel = new JPanel(new GridBagLayout());
+    gridPanel.setBackground(BG_COLOR);
+    gridPanel.setBorder(new EmptyBorder(5, 5, 5, 5)); // Pequeño padding general
+    
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.anchor = GridBagConstraints.NORTHWEST; // Pegar las miniaturas arriba y a la izquierda
+    gbc.insets = new Insets(1, 1, 1, 1); // Espacio entre miniaturas (1px)
+
+    // Tamaño fijo de la miniatura
+    int thumbnailSize = 200; 
+    int col = 0;
+    int row = 0;
+
+    for (Post post : userPosts) {
+        // --- 2. Configurar la miniatura como JButton ---
+        JButton postThumbnail = new JButton();
+        postThumbnail.setPreferredSize(new Dimension(thumbnailSize, thumbnailSize));
+        postThumbnail.setBorder(null);
+        postThumbnail.setBackground(POST_BG);
+        postThumbnail.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Cargar y escalar la imagen (Usando tu método existente)
+        ImageIcon icon = cargarImagenCuadrada(post.getImagePath(), thumbnailSize);
+        if (icon != null) {
+            postThumbnail.setIcon(icon);
+        } else {
+            postThumbnail.setText("IMG");
+            postThumbnail.setForeground(Color.RED);
+        }
+        
+        postThumbnail.addActionListener(e -> showPostDetail(post));
+
+        // --- 3. Aplicar GridBagConstraints ---
+        gbc.gridx = col; // Columna actual
+        gbc.gridy = row; // Fila actual
+        gridPanel.add(postThumbnail, gbc);
+
+        // --- 4. Incrementar posición ---
+        col++;
+        if (col >= 3) {
+            col = 0;
+            row++;
+        }
+    }
+
+    // --- 5. Rellenar el espacio restante si la última fila está incompleta ---
+    // Esto es crucial. Rellena el espacio horizontal restante para que los posts
+    // siempre se peguen a la izquierda sin estirarse.
+    if (col > 0) {
+        gbc.gridx = col;
+        gbc.weightx = 1.0; // Hace que este componente tome todo el espacio restante
+        gridPanel.add(Box.createHorizontalGlue(), gbc);
+    }
+    
+    // Hace que el contenido se pegue a la parte superior (Norte)
+    gbc.gridx = 0;
+    gbc.gridy = row + 1;
+    gbc.weighty = 1.0; // Hace que este componente tome todo el espacio vertical restante
+    gridPanel.add(Box.createVerticalGlue(), gbc);
+
+    return gridPanel;
+}
+
+// --- NUEVO MÉTODO: Maneja el like/unlike de un post ---
+private void handleLikeAction(Post post, JButton likeButton) {
+    if (loggedUser == null) {
+        JOptionPane.showMessageDialog(this, "Debes iniciar sesión para dar like.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
+    
+    if (post.isLikedBy(loggedUser.getUsername())) {
+        post.unlike(loggedUser.getUsername());
+        likeButton.setForeground(TEXT_COLOR); // Color original
+    } else {
+        post.like(loggedUser.getUsername());
+        likeButton.setForeground(Color.RED); // Color de like
+    }
+    
+    // **IMPORTANTE**: Guardar el cambio del post en el archivo del autor.
+    userManager.saveUser(postAuthor); 
+    
+    // Recargar el feed para que se actualice el contador de likes globalmente (o actualizar solo el JLabel)
+    // Para simplificar, si quieres recargar todo el feed (más lento):
+    CardLayout cl = (CardLayout) mainPanel.getLayout();
+    cl.show(mainPanel, "MAIN"); 
+}
+
+// --- NUEVO MÉTODO: Muestra el diálogo de comentarios ---
+private void showCommentDialog(Post post) {
+    if (loggedUser == null) {
+        JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Comentarios de " + post.getAuthorUsername(), true);
+    dialog.setLayout(new BorderLayout());
+    dialog.setSize(500, 600);
+    dialog.setLocationRelativeTo(mainPanel);
+    dialog.getContentPane().setBackground(POST_BG);
+
+    // 1. Panel de Comentarios Existentes
+    JPanel commentsPanel = new JPanel();
+    commentsPanel.setLayout(new BoxLayout(commentsPanel, BoxLayout.Y_AXIS));
+    commentsPanel.setBackground(POST_BG);
+    commentsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+    // Lógica para cargar y mostrar los comentarios (opción "a" de tu instrucción)
+    List<Comment> postComments = post.getComments();
+    
+    if (postComments.isEmpty()) {
+        JLabel empty = new JLabel("Sé el primero en comentar.");
+        empty.setForeground(Color.GRAY);
+        commentsPanel.add(empty);
+    } else {
+        // Ordenar del más reciente al más antiguo
+        postComments.sort(Comparator.comparing(Comment::getDate).reversed()); 
+
+        for (Comment comment : postComments) {
+            JLabel lblComment = new JLabel("<html><b>" + comment.getUsername() + "</b>: " + comment.getText() + "<br><small style='color: gray;'>" + comment.getFormattedDate() + "</small></html>");
+            lblComment.setForeground(TEXT_COLOR);
+            lblComment.setBorder(new EmptyBorder(5, 0, 5, 0));
+            commentsPanel.add(lblComment);
+            commentsPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+        }
+    }
+
+    JScrollPane scrollComments = new JScrollPane(commentsPanel);
+    scrollComments.setBorder(null);
+    dialog.add(scrollComments, BorderLayout.CENTER);
+
+    // 2. Panel para Agregar Nuevo Comentario
+    JPanel addCommentPanel = new JPanel(new BorderLayout(5, 5));
+    addCommentPanel.setBackground(POST_BG);
+    addCommentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+    JTextField txtComment = styledTextField("Añadir un comentario...");
+    JButton btnPostComment = styledButton("Enviar");
+    btnPostComment.setPreferredSize(new Dimension(80, 35));
+    btnPostComment.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+    btnPostComment.addActionListener(e -> {
+        String commentText = txtComment.getText().trim();
+        if (!commentText.isEmpty()) {
+            User author = userManager.getUserByUsername(post.getAuthorUsername());
+
+            // Crear el nuevo comentario
+            Comment newComment = new Comment(loggedUser.getUsername(), commentText);
+            
+            // Añadir al post y guardar
+            post.addComment(newComment);
+            userManager.saveUser(author); 
+
+            // Recargar la vista de comentarios o el diálogo
+            dialog.dispose();
+            showCommentDialog(post); // Llama recursivamente para recargar
+        }
+    });
+
+    addCommentPanel.add(txtComment, BorderLayout.CENTER);
+    addCommentPanel.add(btnPostComment, BorderLayout.EAST);
+    
+    dialog.add(addCommentPanel, BorderLayout.SOUTH);
+    dialog.setVisible(true);
+}
 
     // --- PANEL CREAR POST (NUEVO) ---
     private JPanel crearPanelCrearPost() {
@@ -458,6 +776,46 @@ public class InstagramProject extends JPanel {
 
         return panel;
     }
+    
+    // --- NUEVO MÉTODO: Muestra un post individual en detalle ---
+    private void showPostDetail(Post post) {
+        // 1. Crear el diálogo (ventana emergente)
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), 
+                                    "Publicación de @" + post.getAuthorUsername(), 
+                                    true); // 'true' la hace modal (bloquea la ventana principal)
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(650, 800); // Tamaño adecuado para un post detallado
+        dialog.setLocationRelativeTo(mainPanel); // Centrar respecto a la ventana principal
+        dialog.getContentPane().setBackground(BG_COLOR);
+
+        // 2. Crear la vista del post
+        int postWidth = 600; // Ancho máximo del post dentro del diálogo
+
+        // Reutilizamos la lógica del feed para construir el contenido detallado del post
+        JPanel postViewPanel = createPostFeedView(post, postWidth); 
+
+        // Necesitamos envolverlo en un panel para centrarlo y permitir el scroll si es muy largo
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setBackground(BG_COLOR);
+        centerWrapper.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // Añadimos la vista del post al wrapper (para centrar)
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTH; 
+        centerWrapper.add(postViewPanel, gbc);
+
+        // 3. Añadir scroll
+        JScrollPane scrollPane = new JScrollPane(centerWrapper);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        // 4. Hacer visible
+        dialog.setVisible(true);
+    }
 
     // --- PANEL DE BÚSQUEDA Y VISUALIZACIÓN DE PERFIL (EXISTENTE) ---
     private JPanel crearPanelProfileSearch() {
@@ -469,7 +827,7 @@ public class InstagramProject extends JPanel {
         centerPanel.setBackground(BG_COLOR);
 
         profileCardContainer = new JPanel(new CardLayout());
-        profileCardContainer.setPreferredSize(new Dimension(600, 650));
+        profileCardContainer.setPreferredSize(new Dimension(630, 650));
         profileCardContainer.setBackground(BG_COLOR);
 
         profileCardContainer.add(crearProfileCardSearch(), "SEARCH_INPUT");
@@ -681,7 +1039,12 @@ public class InstagramProject extends JPanel {
 
         headerPanel.add(photoWrapper, BorderLayout.WEST);
 
-
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setBackground(BG_COLOR);
+        tabs.setForeground(TEXT_COLOR);
+        tabs.setFont(new Font("SansSerif", Font.BOLD, 14));
+        tabs.setBorder(new LineBorder(BORDER_COLOR, 1));
+        tabs.setOpaque(true);
 
 
 
@@ -808,51 +1171,38 @@ public class InstagramProject extends JPanel {
 
         // 2.1. Tab Bar Simulation 
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
-        tabBar.setBackground(BG_COLOR);
-        tabBar.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, BORDER_COLOR));
-        tabBar.setPreferredSize(new Dimension(profilePanel.getWidth(), 50));
+tabBar.setBackground(BG_COLOR);
+// Simular el borde inferior del Tab activo
+tabBar.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, BORDER_COLOR)); 
+tabBar.setPreferredSize(new Dimension(profilePanel.getWidth(), 50));
 
-        tabBar.add(createTabIcon("◼️ Posts", "Posts"));
+// Creamos un JLabel para simular el ícono de Grid (Activo)
+JLabel lblGridIcon = new JLabel("◼️ POSTS");
+lblGridIcon.setFont(new Font("SansSerif", Font.BOLD, 14));
+lblGridIcon.setForeground(TEXT_COLOR);
+tabBar.add(lblGridIcon);
 
-        contentPanel.add(tabBar, BorderLayout.NORTH);
+contentPanel.add(tabBar, BorderLayout.NORTH);
 
-        // --- En buildProfileView(User targetUser) ---
+// 2.2. Posts Grid con Scroll (USANDO EL MÉTODO CORREGIDO)
+JPanel postsGrid = crearPostsGrid(targetUser); 
 
-        // 2.2. Posts Grid (MODIFICADO)
-        JPanel postsGrid = new JPanel(new GridLayout(0, 3, 5, 5));
-        postsGrid.setBackground(BG_COLOR);
-        postsGrid.setBorder(new EmptyBorder(10, 5, 10, 5));
-        
-        postsGrid.setPreferredSize(new Dimension(580, postsGrid.getPreferredSize().height));
-        if (targetUser.getPosts().isEmpty()) {
-            // Si no hay posts, añadimos el mensaje centrado. Usaremos un Panel para centrar.
-            JPanel centerNoPosts = new JPanel(new GridBagLayout());
-            centerNoPosts.setBackground(BG_COLOR);
-            JLabel noPosts = new JLabel("Este usuario aún no tiene publicaciones.", SwingConstants.CENTER);
-            noPosts.setForeground(Color.GRAY);
-            noPosts.setFont(new Font("SansSerif", Font.ITALIC, 14));
-            centerNoPosts.add(noPosts);
-            contentPanel.add(centerNoPosts, BorderLayout.CENTER);
+// Si el postsGrid es el wrapper de "No hay posts" (que ya incluye el centrado), lo agregamos directo.
+if (targetUser.getPosts().isEmpty()) {
+    contentPanel.add(postsGrid, BorderLayout.CENTER);
+} else {
+    // Si hay posts, envolvemos el grid en un JScrollPane para el desplazamiento
+    JScrollPane scrollPane = new JScrollPane(postsGrid);
+    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    scrollPane.setBorder(null);
+    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-        } else {
-            for (Post post : targetUser.getPosts()) {
-                postsGrid.add(crearPostMiniatura(post));
-            }
+    contentPanel.add(scrollPane, BorderLayout.CENTER);
+}
 
-            JScrollPane scrollPane = new JScrollPane(postsGrid);
-            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setBorder(null);
-            scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
-
-            // ✅ Añadir el scrollPane directamente al centro del contentPanel (BorderLayout)
-            contentPanel.add(scrollPane, BorderLayout.CENTER); 
-        }
-
-
-        profilePanel.add(contentPanel, BorderLayout.CENTER);
-
-        return profilePanel;
+profilePanel.add(contentPanel, BorderLayout.CENTER);
+return profilePanel;
     }
 
     // Crea una miniatura de post (cuadrado) para la cuadrícula del perfil
@@ -1010,6 +1360,7 @@ public class InstagramProject extends JPanel {
         lbl.setBorder(new EmptyBorder(2, 0, 2, 0));
         return lbl;
     }
+    
 
     // Helper para crear etiquetas de estadísticas de perfil (EXISTENTE)
     private JPanel createStatPanel(String count, String label) {
