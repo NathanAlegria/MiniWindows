@@ -56,7 +56,7 @@ public class InstagramProject extends JPanel {
     private final Color POST_BG = new Color(18, 18, 18); // Fondo de post 
 
     public InstagramProject() {
-        userManager = new UserManager();
+        userManager = UserManager.getInstance();
 
         // El JPanel principal (this) ahora usa BorderLayout para contener el CardLayout global
         setLayout(new BorderLayout());
@@ -1719,6 +1719,21 @@ if (!imgFile.exists() && !isAbsolutePath) {
 
         // Borde cuadrado del mismo tamaño que el JLabel
         lblPhoto.setBorder(BorderFactory.createLineBorder(new Color(255, 105, 39), 3));
+        
+        // Fragmento de tu código de construcción de la Vista de Perfil:
+
+        // 1. Crear el botón
+        JButton statusButton = createToggleStatusButton();
+
+        // 2. Crear un panel contenedor con FlowLayout alineado a la derecha
+        JPanel buttonContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonContainer.setOpaque(false); // Importante si el panel tiene un fondo
+        buttonContainer.add(statusButton);
+        profilePanel.add(buttonContainer, BorderLayout.NORTH); // Lo coloca arriba, extendido.
+
+        // Para posicionarlo estrictamente en la esquina:
+        // Si tienes un panel de cabecera que usa BorderLayout:
+        // profileHeaderPanel.add(buttonContainer, BorderLayout.EAST);
 
         // Cargar imagen cuadrada escalada al tamaño interior del JLabel
         ImageIcon icon = cargarImagenCuadrada(targetUser.getFotoPath(), photoSize - 6);
@@ -2597,22 +2612,127 @@ if (!imgFile.exists() && !isAbsolutePath) {
     /**
      * Crea el componente visual para una notificación de mención.
      */
-    private JPanel createMentionItem(Post post) {
-        JPanel item = new JPanel(new BorderLayout(10, 5));
-        item.setBackground(POST_BG);
-        item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
-        item.setMaximumSize(new Dimension(500, 80));
-        String author = post.getAuthorUsername();
-        JLabel lblText = new JLabel("<html><b>@" + author + "</b> te mencionó en una publicación: <i>"
-                + post.getCaption().substring(0, Math.min(post.getCaption().length(), 50))
-                + (post.getCaption().length() > 50 ? "..." : "") + "</i></html>");
-        lblText.setForeground(TEXT_COLOR);
-        lblText.setBorder(new EmptyBorder(10, 10, 10, 10));
-        item.add(lblText, BorderLayout.CENTER);
-        JLabel lblImage = new JLabel(cargarImagenCuadrada(post.getImagePath(), 60));
-        lblImage.setBorder(new EmptyBorder(5, 5, 5, 10));
-        item.add(lblImage, BorderLayout.EAST);
-        return item;
+   private JPanel createMentionItem(Post post) {
+    
+    // 🚨 DEBUG 1: Confirma que se está procesando un Post.
+    System.out.println("DEBUG UI: Creando item de mención para post de @" + post.getAuthorUsername() 
+                       + " con caption: " + post.getCaption().substring(0, Math.min(post.getCaption().length(), 20)) + "...");
+    
+    JPanel item = new JPanel(new BorderLayout(10, 5));
+    
+    // 🚨 DEBUG 2: Establece un fondo seguro (amarillo) para garantizar visibilidad.
+    // Comenta la línea original (item.setBackground(POST_BG);) y usa esta.
+    item.setBackground(Color.YELLOW); 
+    // item.setBackground(POST_BG); // Original, descomentar si Color.YELLOW funciona.
+    
+    item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
+    item.setMaximumSize(new Dimension(500, 80));
+    
+    String author = post.getAuthorUsername();
+    
+    JLabel lblText = new JLabel("<html><b>@" + author + "</b> te mencionó en una publicación: <i>"
+            + post.getCaption().substring(0, Math.min(post.getCaption().length(), 50))
+            + (post.getCaption().length() > 50 ? "..." : "") + "</i></html>");
+    
+    // 🚨 DEBUG 3: Usa color negro si TEXT_COLOR es dudoso (por ejemplo, si es igual a POST_BG).
+    lblText.setForeground(Color.BLACK); 
+    // lblText.setForeground(TEXT_COLOR); // Original, descomentar si Color.BLACK funciona.
+    
+    lblText.setBorder(new EmptyBorder(10, 10, 10, 10));
+    item.add(lblText, BorderLayout.CENTER);
+    
+    // --- Comprobación de la Imagen ---
+    ImageIcon imageIcon = cargarImagenCuadrada(post.getImagePath(), 60);
+    
+    // 🚨 DEBUG 4: Muestra la ruta de la imagen para verificar accesibilidad.
+    System.out.println("DEBUG UI: Ruta de imagen a cargar: " + post.getImagePath());
+    if (imageIcon == null || imageIcon.getImageLoadStatus() != MediaTracker.COMPLETE) {
+        System.err.println("DEBUG UI: 🔴 ERROR: La imagen no se cargó correctamente para: " + post.getImagePath());
     }
+
+    JLabel lblImage = new JLabel(imageIcon);
+    lblImage.setBorder(new EmptyBorder(5, 5, 5, 10));
+    item.add(lblImage, BorderLayout.EAST);
+    
+    // 🚨 DEBUG 5: Confirma el tamaño y revalidate para que el panel se dibuje correctamente.
+    item.revalidate(); 
+    item.repaint();
+    
+    return item;
+}
+   
+/**
+ * Gestiona la activación y desactivación del loggedUser.
+ */
+public void toggleAccountStatus() {
+    if (loggedUser == null) {
+        JOptionPane.showMessageDialog(null, "Error: No hay un usuario logueado.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // 1. CASO: Cuenta ACTIVA -> Desactivar
+    if (loggedUser.isActive()) {
+        int confirmation = JOptionPane.showConfirmDialog(
+            null, 
+            "Tu cuenta está ACTIVA. ¿Estás seguro de que quieres DESACTIVARLA?\n\n" + 
+            "Tu perfil dejará de aparecer en búsquedas, comentarios y feeds.", 
+            "Confirmar Desactivación", 
+            JOptionPane.YES_NO_OPTION, 
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirmation == JOptionPane.YES_OPTION) {
+            loggedUser.setActive(false);
+            if (userManager.saveUser(loggedUser)) {
+                JOptionPane.showMessageDialog(null, "✅ Cuenta desactivada con éxito. Deberás volver a iniciar sesión para reactivarla.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                // Si quieres cerrar la sesión automáticamente
+                // llamar al método logout() aquí.
+            } else {
+                JOptionPane.showMessageDialog(null, "Error al guardar el estado de la cuenta.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    } 
+    // 2. CASO: Cuenta DESACTIVADA -> Activar
+    else {
+        // No se pregunta, se activa automáticamente
+        loggedUser.setActive(true);
+        if (userManager.saveUser(loggedUser)) {
+            JOptionPane.showMessageDialog(null, "✅ Cuenta ACTIVADA con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, "Error al guardar el estado de la cuenta.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+// Este método debe estar en la misma clase que tiene acceso a loggedUser, 
+// userManager y al método toggleAccountStatus().
+
+private JButton createToggleStatusButton() {
+    JButton btnToggleStatus = new JButton();
+
+    // 1. Establecer el texto y el color basado en el estado actual
+    if (loggedUser.isActive()) {
+        // La cuenta está activa, el botón es para DESACTIVAR
+        btnToggleStatus.setText("Desactivar Cuenta 🔴");
+        btnToggleStatus.setBackground(new Color(255, 100, 100)); // Rojo suave
+    } else {
+        // La cuenta está inactiva, el botón es para ACTIVAR
+        btnToggleStatus.setText("Activar Cuenta 🟢");
+        btnToggleStatus.setBackground(new Color(100, 200, 100)); // Verde suave
+    }
+    
+    btnToggleStatus.setForeground(Color.WHITE); // Texto blanco para contraste
+    btnToggleStatus.setOpaque(true);
+    btnToggleStatus.setBorderPainted(false);
+    
+    // 2. Asignar la acción
+    btnToggleStatus.addActionListener(e -> {
+        toggleAccountStatus();
+        // Después de la acción, la vista de perfil debe recargarse para actualizar el botón.
+        // Si toggleAccountStatus() no recarga automáticamente, hazlo aquí:
+        // loadProfileView(loggedUser); 
+    });
+
+    return btnToggleStatus;
+}
 
 }

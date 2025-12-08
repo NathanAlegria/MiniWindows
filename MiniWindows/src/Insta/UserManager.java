@@ -28,16 +28,23 @@ import java.util.concurrent.TimeUnit;
  * @author jerem
  */
 public class UserManager {
+    private static UserManager instance;
     private List<User> users;
     private static final String FILE_NAME = "users.dat";
     private static final String USERS_INS_FILE = "users.ins";
 
-    public UserManager() {
+    private UserManager() {
         users = loadUsers();
-        // Cargar datos de prueba si la lista está vacía
         if (users.isEmpty()) {
             setupTestData();
         }
+    }
+    
+    public static UserManager getInstance() {
+        if (instance == null) {
+            instance = new UserManager();
+        }
+        return instance;
     }
 
     private void setupTestData() {
@@ -82,19 +89,19 @@ public class UserManager {
 }
     
     // Agrega esto dentro de tu clase UserManager
-    public List<User> searchUsers(String query) {
+    // En UserManager.java
+
+public List<User> searchUsers(String query) {
     List<User> matches = new ArrayList<>();
     String lowerQuery = query.toLowerCase();
     
     for (User user : users) {
-        // Opción simple: Si el username CONTIENE la query
-        if (user.getUsername().toLowerCase().contains(lowerQuery)) {
-            matches.add(user);
+        // 🚨 CRÍTICO: SOLO procesar usuarios activos
+        if (user.isActive()) { 
+            if (user.getUsername().toLowerCase().contains(lowerQuery)) {
+                matches.add(user);
+            }
         }
-        // Opción más específica (comentar si se usa la anterior): 
-        // if (user.getUsername().toLowerCase().startsWith(lowerQuery)) {
-        //     matches.add(user);
-        // }
     }
     return matches;
 }
@@ -151,6 +158,11 @@ public class UserManager {
         if (user == null) {
             throw new InvalidCredentialsException("Usuario o contraseña incorrectos.");
         }
+        
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException("Tu cuenta está desactivada. Por favor, revisa las opciones para activarla.");
+        }
+        
         return user;
     }
 
@@ -212,8 +224,7 @@ public void registrarUsuario(User newUser) throws Exception {
 
 public User getUserByUsername(String username) {
     // 1. FORZAR LA RECARGA DE TODA LA LISTA DE USUARIOS DESDE EL ARCHIVO
-    // Esto asegura que la lista 'this.users' tenga la última versión del disco.
-    this.users = loadUsers(); 
+    // Esto asegura que la lista 'this.users' tenga la última versión del disco. 
 
     // 2. Buscar el usuario en la lista recién cargada
     return this.users.stream()
@@ -262,29 +273,46 @@ private Post parsePostFromLine(String line) {
 /** Lee y parsea todos los posts del archivo insta.ins de un usuario específico. */
 public List<Post> loadPostsFromLocalFile(String username) {
     List<Post> userPosts = new ArrayList<>();
-    
-    // 🚨 CORRECCIÓN CRÍTICA: Asegurar la ruta absoluta usando la raíz del proyecto (user.dir)
-    // El archivo debe estar en: [Raíz del Proyecto]/[username]/insta.ins
-    File file = new File(System.getProperty("user.dir") + File.separator + username, "insta.ins");
-    
+
+    // 📌 Obtener la ruta absoluta de la raíz del proyecto
+    String basePath = System.getProperty("user.dir");
+
+    // 📌 Carpeta del usuario: [RaizProyecto]/[username]/
+    File userFolder = new File(basePath, username);
+
+    // Si la carpeta no existe, la creamos
+    if (!userFolder.exists()) {
+        userFolder.mkdirs();
+    }
+
+    // 📌 Archivo: [RaizProyecto]/[username]/insta.ins
+    File file = new File(userFolder, "insta.ins");
+
+    // Si el archivo no existe, devolvemos lista vacía (normal si no hay posts)
     if (!file.exists()) {
-        // Esto es normal si el usuario aún no tiene posts
         return userPosts;
     }
 
     try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
         String line;
         while ((line = reader.readLine()) != null) {
+
+            // Evitar líneas vacías o corruptas
+            if (line.trim().isEmpty()) continue;
+
             Post post = parsePostFromLine(line);
+
             if (post != null) {
                 userPosts.add(post);
             }
         }
     } catch (IOException e) {
-        System.err.println("Error al leer posts de " + username + " desde insta.ins: " + e.getMessage());
+        System.err.println("⚠ Error al leer posts de " + username + " desde insta.ins: " + e.getMessage());
     }
+
     return userPosts;
 }
+
 // Dentro de UserManager
 
 // Dentro de UserManager
@@ -316,15 +344,21 @@ public List<Post> getAllRelevantPostsByDate(User loggedUser) {
     List<Post> allPosts = new ArrayList<>();
 
     // 1. Cargar Posts Propios (Usando el archivo local)
-    allPosts.addAll(loadPostsFromLocalFile(loggedUser.getUsername()));
+    if (loggedUser.isActive()) {
+         allPosts.addAll(loadPostsFromLocalFile(loggedUser.getUsername()));
+    }
 
     // 2. Obtener la lista de usuarios seguidos desde el archivo de texto
     List<String> followedUsers = loadFollowingsFromLocalFile(loggedUser.getUsername());
     
     // 3. Cargar Posts de los Usuarios Seguidos (Usando el archivo local)
     for (String followedUsername : followedUsers) {
-        // Ya no necesitamos getUserByUsername aquí, solo cargamos sus posts.
-        allPosts.addAll(loadPostsFromLocalFile(followedUsername));
+        User followedUser = getUserByUsername(followedUsername); 
+        
+        // 🚨 CRÍTICO: Solo cargar posts si el usuario seguido está ACTIVO
+        if (followedUser != null && followedUser.isActive()) {
+            allPosts.addAll(loadPostsFromLocalFile(followedUsername));
+        }
     }
 
     // 4. Ordenar la lista combinada
@@ -412,7 +446,13 @@ public void toggleFollow(String followerUsername, String targetUsername) {
     
     public List<Post> searchPostsByHashtag(String hashtag) {
     List<Post> results = new ArrayList<>();
-    String searchTag = "#" + hashtag.toLowerCase();
+    
+    // 🚨 CORRECCIÓN CRÍTICA:
+    // 1. Limpiar la entrada: Quitar el '#' si ya existe, y convertir a minúsculas.
+    String cleanedHashtag = hashtag.replace("#", "").toLowerCase(); 
+    
+    // 2. Reconstruir la cadena de búsqueda: Añadir el '#' solo al inicio.
+    String searchTag = "#" + cleanedHashtag; 
     
     // Iterar sobre todos los usuarios cargados
     for (User user : users) {
@@ -422,7 +462,7 @@ public void toggleFollow(String followerUsername, String targetUsername) {
         for (Post post : userPosts) {
             String captionLower = post.getCaption().toLowerCase();
             
-            // 🚨 Búsqueda simplificada: si el caption contiene la cadena "#tag"
+            // Búsqueda simplificada: si el caption contiene la cadena "#tag"
             if (captionLower.contains(searchTag)) {
                 results.add(post);
             }
@@ -513,35 +553,30 @@ private void writeLocalFile(String username, String filename, String content) th
 public List<Post> findMentions(String targetUsername) {
     List<Post> mentionedPosts = new ArrayList<>();
     
-    // 1. Definir la cadena de búsqueda exacta
-    final String searchString = "@" + targetUsername; 
-    
-    // 2. Iterar sobre todos los usuarios y sus posts
+    String cleanedTarget = targetUsername.replace("@", "").toLowerCase();
+    String searchString = "@" + cleanedTarget;
+
+    System.out.println("DEBUG: Buscando menciones en users.dat...");
+
+    // 🚨 Aquí usamos directamente los posts serializados reales
     for (User user : users) {
-        // Obtenemos los posts del usuario (usando el método de carga de .ins)
-        List<Post> userPosts = loadPostsFromLocalFile(user.getUsername());
-        
-        for (Post post : userPosts) {
+        for (Post post : user.getPosts()) {
+
             String caption = post.getCaption();
-            
-            // 🚨 SIMPLIFICACIÓN: Usamos String.contains() para una coincidencia simple.
-            // Convertimos todo a minúsculas para una búsqueda sin distinción de mayúsculas/minúsculas.
-            if (caption.toLowerCase().contains(searchString.toLowerCase())) {
-                
-                // Opcional pero recomendado: Evitar que el usuario se mencione a sí mismo
-                // si no queremos que aparezca en el feed de notificaciones.
-                if (!user.getUsername().equalsIgnoreCase(targetUsername)) { 
+            if (caption == null) continue;
+
+            if (caption.toLowerCase().contains(searchString)) {
+                if (!user.getUsername().equalsIgnoreCase(cleanedTarget)) {
                     mentionedPosts.add(post);
                 }
             }
         }
     }
-    
-    // 3. Ordenar por fecha, el más reciente primero
-    mentionedPosts.sort(Comparator.comparing(Post::getDate, Comparator.reverseOrder()));
-    
+
+    mentionedPosts.sort(Comparator.comparing(Post::getDate).reversed());
     return mentionedPosts;
 }
+
 // Nuevo método necesario en la clase UserManager:
 public void updatePostInUserList(User author, Post modifiedPost) {
     List<Post> posts = author.getPosts();
@@ -581,4 +616,6 @@ public boolean addCommentAndSave(Post post, Comment newComment) {
     // 4. Guardar la persistencia del autor
     return saveUser(author); // Asume que saveUser guarda el archivo users.dat
 }
+
+
 }
