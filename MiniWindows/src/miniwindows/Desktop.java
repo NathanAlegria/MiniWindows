@@ -25,7 +25,6 @@ import java.util.Map;
  *
  * @author Nathan
  */
-
 public class Desktop extends JFrame {
 
     private static final String BACKGROUND_IMAGE = "Imagenes/Fondo.png";
@@ -50,13 +49,12 @@ public class Desktop extends JFrame {
     private JPanel taskbarAppPanel;
     private Map<JInternalFrame, JButton> frameButtonMap = new HashMap<>();
 
-    private float iconAlpha = 1f; 
+    private float iconAlpha = 1f;
     private Timer fadeTimer;
 
     public Desktop(User user) {
         this.currentUser = user;
         setTitle("Mini-Windows Desktop - Sesión de: " + user.getUsername());
-
         setUndecorated(true);
         setResizable(false);
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -66,31 +64,13 @@ public class Desktop extends JFrame {
 
         desktopPane = new JDesktopPane();
 
+        // 1. Panel de Fondo (Capa DEFAULT_LAYER)
         BackgroundPanel background = new BackgroundPanel(BACKGROUND_IMAGE);
         background.setBounds(0, 0, screen.width, screen.height);
         desktopPane.add(background, JLayeredPane.DEFAULT_LAYER);
 
-        JPanel contentPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (desktopIconPanel != null) {
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, iconAlpha));
-                    desktopIconPanel.paint(g2d);
-                    g2d.dispose();
-                }
-            }
-        };
-        contentPanel.setOpaque(false);
-        contentPanel.setBounds(0, 0, screen.width, screen.height);
-        desktopPane.add(contentPanel, JLayeredPane.DRAG_LAYER);
-
-        taskbarAppPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-        taskbarAppPanel.setOpaque(false);
-        contentPanel.add(createModernTaskbar(), BorderLayout.SOUTH);
-
-        JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15)) {
+        // 2. Panel que contiene los Íconos del Escritorio (Capa DRAG_LAYER - Baja)
+        desktopIconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15)) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
@@ -99,15 +79,28 @@ public class Desktop extends JFrame {
                 g2d.dispose();
             }
         };
-        iconPanel.setOpaque(false);
-        iconPanel.add(createDesktopIcon("🗂️", "Archivos", e -> launchFileExplorer()));
-        iconPanel.add(createDesktopIcon("🎵", "Reproductor Musical", e -> launchMusicPlayer()));
-        iconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
-        iconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
-        iconPanel.add(createDesktopIcon("🖼️", "Visor de Imágenes", e -> launchImageViewer()));
-        iconPanel.add(createDesktopIcon("📸", "Instagram", e -> launchInstagram()));
-        contentPanel.add(iconPanel, BorderLayout.NORTH);
-        this.desktopIconPanel = iconPanel;
+        desktopIconPanel.setOpaque(false);
+        desktopIconPanel.setBounds(0, 0, screen.width, screen.height - 40);
+        desktopIconPanel.add(createDesktopIcon("🗂️", "Archivos", e -> launchFileExplorer()));
+        desktopIconPanel.add(createDesktopIcon("🎵", "Reproductor Musical", e -> launchMusicPlayer()));
+        desktopIconPanel.add(createDesktopIcon("📝", "Texto", e -> launchTextEditor()));
+        desktopIconPanel.add(createDesktopIcon("🚀", "Consola", e -> launchConsole()));
+        desktopIconPanel.add(createDesktopIcon("🖼️", "Visor de Imágenes", e -> launchImageViewer()));
+        desktopIconPanel.add(createDesktopIcon("📸", "Instagram", e -> launchInstagram()));
+
+        desktopPane.add(desktopIconPanel, JLayeredPane.DRAG_LAYER);
+
+        // 3. Panel de la Barra de Tareas (Capa PALETTE_LAYER - Alta)
+        JPanel taskbarWrapper = new JPanel(new BorderLayout());
+        taskbarWrapper.setOpaque(false);
+        taskbarWrapper.setBounds(0, screen.height - 40, screen.width, 40);
+
+        taskbarAppPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        taskbarAppPanel.setOpaque(false);
+
+        taskbarWrapper.add(createModernTaskbar(), BorderLayout.SOUTH);
+
+        desktopPane.add(taskbarWrapper, JLayeredPane.PALETTE_LAYER);
 
         add(desktopPane);
         startClockTimer();
@@ -115,6 +108,9 @@ public class Desktop extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
+                background.setBounds(0, 0, getWidth(), getHeight());
+                desktopIconPanel.setBounds(0, 0, getWidth(), getHeight() - 40);
+                taskbarWrapper.setBounds(0, getHeight() - 40, getWidth(), 40);
                 checkDesktopIconVisibility();
             }
         });
@@ -124,10 +120,8 @@ public class Desktop extends JFrame {
         JPanel taskbar = new JPanel(new BorderLayout());
         taskbar.setBackground(new Color(38, 38, 38));
         taskbar.setPreferredSize(new Dimension(getWidth(), 40));
-
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         leftPanel.setOpaque(false);
-
         JButton startButton = new JButton("🪟");
         startButton.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
         startButton.setBackground(new Color(0, 120, 215));
@@ -135,7 +129,6 @@ public class Desktop extends JFrame {
         startButton.setPreferredSize(new Dimension(30, 30));
         startButton.addActionListener(e -> showStartMenu(startButton));
         leftPanel.add(startButton);
-
         JTextField searchBar = new JTextField("Buscar", 20);
         searchBar.setBackground(new Color(60, 60, 60));
         searchBar.setForeground(Color.WHITE);
@@ -166,20 +159,16 @@ public class Desktop extends JFrame {
             }
         });
         leftPanel.add(searchBar);
-
         for (String[] app : APPS) {
             leftPanel.add(createTaskbarIcon(app[1], app[0], e -> openAppByName(app[0])));
         }
-
         leftPanel.add(taskbarAppPanel);
         taskbar.add(leftPanel, BorderLayout.WEST);
-
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         rightPanel.setOpaque(false);
         timeLabel = new JLabel();
         timeLabel.setForeground(Color.WHITE);
         rightPanel.add(timeLabel);
-
         taskbar.add(rightPanel, BorderLayout.EAST);
         return taskbar;
     }
@@ -200,30 +189,25 @@ public class Desktop extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
         panel.setPreferredSize(new Dimension(100, 80));
-
         JLabel icon = new JLabel(emoji, SwingConstants.CENTER);
         icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         icon.setForeground(Color.WHITE);
-
         JLabel label = new JLabel(name, SwingConstants.CENTER);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         label.setForeground(Color.WHITE);
-
         panel.add(icon, BorderLayout.CENTER);
         panel.add(label, BorderLayout.SOUTH);
-
         if (doubleClickListener != null) {
             panel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (e.getClickCount() == 2) {
+                    if (e.getClickCount() == 2 && panel.isEnabled()) {
                         doubleClickListener.actionPerformed(
                                 new ActionEvent(panel, ActionEvent.ACTION_PERFORMED, name));
                     }
                 }
             });
         }
-
         return panel;
     }
 
@@ -308,11 +292,9 @@ public class Desktop extends JFrame {
 
     private void addInternalFrame(JInternalFrame frame, String title) {
         frame.setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
-
         int x = (desktopPane.getWidth() - frame.getWidth()) / 2;
         int y = (desktopPane.getHeight() - frame.getHeight()) / 2;
         frame.setLocation(x, y);
-
         desktopPane.add(frame, JLayeredPane.PALETTE_LAYER);
         frame.setVisible(true);
 
@@ -320,7 +302,6 @@ public class Desktop extends JFrame {
         taskButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         taskButton.setBackground(new Color(60, 60, 60));
         taskButton.setForeground(Color.WHITE);
-
         taskButton.addActionListener(e -> {
             try {
                 if (frame.isIcon()) {
@@ -330,11 +311,9 @@ public class Desktop extends JFrame {
             } catch (Exception ignored) {
             }
         });
-
         taskbarAppPanel.add(taskButton);
         taskbarAppPanel.revalidate();
         taskbarAppPanel.repaint();
-
         frameButtonMap.put(frame, taskButton);
 
         frame.addInternalFrameListener(new InternalFrameAdapter() {
@@ -349,7 +328,7 @@ public class Desktop extends JFrame {
         });
 
         frame.addPropertyChangeListener(evt -> {
-            if ("maximum".equals(evt.getPropertyName()) || "icon".equals(evt.getPropertyName())) {
+            if ("maximum".equals(evt.getPropertyName()) || "icon".equals(evt.getPropertyName()) || "selected".equals(evt.getPropertyName())) {
                 checkDesktopIconVisibility();
             }
         });
@@ -359,13 +338,14 @@ public class Desktop extends JFrame {
             frame.setSelected(true);
         } catch (Exception ignored) {
         }
+        checkDesktopIconVisibility();
     }
 
     private void checkDesktopIconVisibility() {
         boolean hideIcons = false;
 
         for (JInternalFrame frame : desktopPane.getAllFrames()) {
-            if (frame.isVisible() && (frame.isMaximum() || frame.getLayer() > JLayeredPane.DEFAULT_LAYER)) {
+            if (frame.isVisible() && !frame.isIcon() && frame.isMaximum()) {
                 hideIcons = true;
                 break;
             }
@@ -378,26 +358,49 @@ public class Desktop extends JFrame {
         if (fadeTimer != null && fadeTimer.isRunning()) {
             fadeTimer.stop();
         }
-
         float target = hide ? 0f : 1f;
+
+        if (Math.abs(iconAlpha - target) < 0.01f) {
+            setDesktopIconInteractivity(!hide);
+            desktopIconPanel.setVisible(!hide);
+            return;
+        }
+
         fadeTimer = new Timer(20, null);
         fadeTimer.addActionListener(e -> {
-            if (hide && iconAlpha > 0f) {
+            if (hide) {
                 iconAlpha -= 0.05f;
                 if (iconAlpha < 0f) {
                     iconAlpha = 0f;
                 }
-            } else if (!hide && iconAlpha < 1f) {
+            } else {
                 iconAlpha += 0.05f;
                 if (iconAlpha > 1f) {
                     iconAlpha = 1f;
                 }
-            } else {
+            }
+            
+            if (iconAlpha == target) {
                 fadeTimer.stop();
+                setDesktopIconInteractivity(!hide);
+                desktopIconPanel.setVisible(!hide);
             }
             desktopIconPanel.repaint();
         });
+
+        if (!hide) {
+            desktopIconPanel.setVisible(true);
+        }
+        setDesktopIconInteractivity(hide ? false : (iconAlpha == 1f));
+        
         fadeTimer.start();
+    }
+
+    private void setDesktopIconInteractivity(boolean enable) {
+        desktopIconPanel.setEnabled(enable);
+        for (Component comp : desktopIconPanel.getComponents()) {
+            comp.setEnabled(enable);
+        }
     }
 
     private class BackgroundPanel extends JPanel {
@@ -435,22 +438,19 @@ public class Desktop extends JFrame {
         }
 
         startMenu = new JPopupMenu();
-        startMenu.setPreferredSize(new Dimension(450, 520)); 
+        startMenu.setPreferredSize(new Dimension(450, 520));
         startMenu.setLayout(new BorderLayout());
         startMenu.setBackground(new Color(45, 45, 45));
 
         JPanel userPanel = new JPanel(new BorderLayout());
         userPanel.setBackground(new Color(35, 35, 35));
         userPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
         JLabel iconLabel = new JLabel("👤", SwingConstants.CENTER);
         iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         iconLabel.setForeground(Color.WHITE);
-
         JLabel name = new JLabel(currentUser.getUsername(), SwingConstants.LEFT);
         name.setFont(new Font("Segoe UI", Font.BOLD, 16));
         name.setForeground(Color.WHITE);
-
         userPanel.add(iconLabel, BorderLayout.WEST);
         userPanel.add(name, BorderLayout.CENTER);
         startMenu.add(userPanel, BorderLayout.NORTH);
@@ -458,7 +458,6 @@ public class Desktop extends JFrame {
         JPanel appGrid = new JPanel(new GridLayout(2, 3, 10, 10));
         appGrid.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         appGrid.setBackground(new Color(45, 45, 45));
-
         for (String[] app : APPS) {
             appGrid.add(createAppMenuItem(app[1], app[0], e -> {
                 openAppByName(app[0]);
@@ -476,19 +475,19 @@ public class Desktop extends JFrame {
         switchAccount.setForeground(Color.WHITE);
         switchAccount.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
-                new Login().setVisible(true); 
+                new Login().setVisible(true);
                 Desktop.this.dispose();
             });
         });
         bottom.add(switchAccount);
-        
-        if (currentUser.isAdmin()) { 
+
+        if (currentUser.isAdmin()) {
             JButton adminAccounts = new JButton("⚙️ Cuentas");
-            adminAccounts.setBackground(new Color(0, 120, 215)); 
+            adminAccounts.setBackground(new Color(0, 120, 215));
             adminAccounts.setForeground(Color.WHITE);
             adminAccounts.addActionListener(e -> {
                 startMenu.setVisible(false);
-                showAdminMenu(); 
+                showAdminMenu();
             });
             bottom.add(adminAccounts);
         }
@@ -497,33 +496,26 @@ public class Desktop extends JFrame {
         logout.setBackground(new Color(150, 0, 0));
         logout.setForeground(Color.WHITE);
         logout.addActionListener(e -> System.exit(0));
-        
         bottom.add(logout);
 
         startMenu.add(bottom, BorderLayout.SOUTH);
 
         startMenu.show(source, 0, source.getHeight());
     }
-    
+
     private void showAdminMenu() {
         Object[] options = {"➕ Crear Cuenta", "➖ Eliminar Cuenta"};
         int n = JOptionPane.showOptionDialog(
-                this,
-                "Seleccione una acción de administración de cuentas:",
-                "Administración de Cuentas",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null, 
-                options,
-                options[0]);
+                this, "Seleccione una acción de administración de cuentas:", "Administración de Cuentas",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
         if (n == 0) {
-            showCreateUserDialog(); 
+            showCreateUserDialog();
         } else if (n == 1) {
-            showDeleteUserDialog(); 
+            showDeleteUserDialog();
         }
     }
-    
+
     private void showCreateUserDialog() {
         JTextField userField = new JTextField(12);
         JPasswordField passField = new JPasswordField(12);
@@ -535,8 +527,8 @@ public class Desktop extends JFrame {
         panel.add(new JLabel("Contraseña (5 chars EXACTOS, 1 Mayús., 1 Signo Esp.):"));
         panel.add(passField);
 
-        int result = JOptionPane.showConfirmDialog(this, panel,
-                "Crear Nuevo Usuario", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(this, panel, "Crear Nuevo Usuario",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
             String newUsername = userField.getText().trim();
@@ -546,77 +538,58 @@ public class Desktop extends JFrame {
                 JOptionPane.showMessageDialog(this, "Usuario y contraseña no pueden estar vacíos.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
+
             if (newUsername.equalsIgnoreCase("Admin")) {
                 JOptionPane.showMessageDialog(this, "El nombre de usuario 'Admin' está reservado.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (!Password.isValid(newPassword)) {
-                JOptionPane.showMessageDialog(this,
-                        "La contraseña NO cumple los requisitos:\n" + Password.getErrorReason(newPassword),
-                        "Error de Validación de Contraseña", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "La contraseña NO cumple los requisitos:\n" + Password.getErrorReason(newPassword), "Error de Validación de Contraseña", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (UserManager.createUser(newUsername, newPassword)) {
-                JOptionPane.showMessageDialog(this,
-                        "Usuario '" + newUsername + "' creado exitosamente.",
-                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Usuario '" + newUsername + "' creado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this,
-                        "El nombre de usuario '" + newUsername + "' ya existe.",
-                        "Error de Creación", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "El nombre de usuario '" + newUsername + "' ya existe.", "Error de Creación", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void showDeleteUserDialog() {
         List<User> users = UserManager.getUsers();
-        
         List<String> usernames = users.stream()
-            .filter(user -> !user.isAdmin())
-            .map(User::getUsername)
-            .toList();
-        
+                .filter(user -> !user.isAdmin())
+                .map(User::getUsername)
+                .toList();
+
         if (usernames.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No hay usuarios no administradores para eliminar.", "Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         String selectedUser = (String) JOptionPane.showInputDialog(
-                this,
-                "Seleccione el usuario que desea eliminar:",
-                "Eliminar Usuario",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                usernames.toArray(),
-                usernames.get(0));
+                this, "Seleccione el usuario que desea eliminar:", "Eliminar Usuario",
+                JOptionPane.QUESTION_MESSAGE, null, usernames.toArray(), usernames.get(0));
 
         if (selectedUser != null && !selectedUser.isEmpty()) {
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                    "¿Está seguro que desea eliminar a '" + selectedUser + "'? Esta acción es irreversible.", 
-                    "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            int confirm = JOptionPane.showConfirmDialog(this, "¿Está seguro que desea eliminar a '" + selectedUser + "'? Esta acción es irreversible.", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 if (UserManager.deleteUser(selectedUser)) {
-                    JOptionPane.showMessageDialog(this, 
-                            "Usuario '" + selectedUser + "' eliminado correctamente.", 
-                            "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Usuario '" + selectedUser + "' eliminado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(this, 
-                            "Error al eliminar al usuario. Asegúrese de que el usuario existe.", 
-                            "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Error al eliminar al usuario. Asegúrese de que el usuario existe.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
     }
 
-
     private JPanel createAppMenuItem(String emoji, String name, ActionListener listener) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(new Color(60, 60, 60));
-        panel.setPreferredSize(new Dimension(100, 100)); 
+        panel.setPreferredSize(new Dimension(100, 100));
 
         JLabel iconLabel = new JLabel(emoji, SwingConstants.CENTER);
         iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
@@ -639,10 +612,8 @@ public class Desktop extends JFrame {
     }
 
     private void startClockTimer() {
-        java.time.format.DateTimeFormatter timeFormatter
-                = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
-        java.time.format.DateTimeFormatter dateFormatter
-                = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+        java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         clockTimer = new javax.swing.Timer(1000, e -> {
             String time = java.time.LocalTime.now().format(timeFormatter);
@@ -652,4 +623,4 @@ public class Desktop extends JFrame {
         clockTimer.setInitialDelay(0);
         clockTimer.start();
     }
-}
+} 

@@ -168,7 +168,7 @@ public class InstagramProject extends JPanel {
 
         JPasswordField txtPass = styledPasswordField("Contraseña");
         txtPass.setBounds(50, 170, 300, 35);
-
+ 
         JTextField txtEdad = styledTextField("Edad");
         txtEdad.setBounds(50, 215, 140, 35);
 
