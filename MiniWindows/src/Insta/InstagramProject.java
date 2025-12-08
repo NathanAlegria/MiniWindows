@@ -201,9 +201,26 @@ public class InstagramProject extends JPanel {
             int returnValue = fileChooser.showOpenDialog(null);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
-                photoPath[0] = selectedFile.getAbsolutePath();
-                btnPhoto.setText(selectedFile.getName());
-                btnPhoto.setForeground(BTN_BLUE);
+                try {
+                    // Crear un nombre único para la foto de perfil
+                    String newFileName = "profile_" + System.currentTimeMillis() + "_" + selectedFile.getName();
+
+                    // Ruta de la raíz del proyecto
+                    String projectRoot = System.getProperty("user.dir");
+                    File destFile = new File(projectRoot, newFileName);
+
+                    // Copiar el archivo seleccionado a la raíz del proyecto
+                    java.nio.file.Files.copy(selectedFile.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    // Guardamos solo el nombre del archivo
+                    photoPath[0] = newFileName;
+                    btnPhoto.setText(selectedFile.getName());
+                    btnPhoto.setForeground(BTN_BLUE);
+                } catch (Exception ex) {
+                    btnPhoto.setText("Error al guardar imagen");
+                    btnPhoto.setForeground(Color.RED);
+                    ex.printStackTrace();
+                }
             }
         });
 
@@ -285,427 +302,428 @@ public class InstagramProject extends JPanel {
     // --- PANEL PRINCIPAL (FEED) (EXISTENTE) ---
     // --- CÓDIGO MODIFICADO: crearFeedContentWrapper ---
     private JPanel crearFeedContentWrapper() {
-    JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
-    contentAreaWrapper.setBackground(BG_COLOR);
+        JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
+        contentAreaWrapper.setBackground(BG_COLOR);
 
-    // 1. Crear el JPanel que contendrá los Posts
-    JPanel feedContent = new JPanel(); 
-    feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
-    feedContent.setBackground(BG_COLOR);
-    feedContent.setName("FEED_POSTS_INNER_PANEL"); 
+        // 1. Crear el JPanel que contendrá los Posts
+        JPanel feedContent = new JPanel();
+        feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
+        feedContent.setBackground(BG_COLOR);
+        feedContent.setName("FEED_POSTS_INNER_PANEL");
 
-    int feedWidth = 550;
-    feedContent.setPreferredSize(new Dimension(feedWidth, 600));
-    feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
+        int feedWidth = 550;
+        feedContent.setPreferredSize(new Dimension(feedWidth, 600));
+        feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
 
-    // Lógica del Feed
-    loadFeedPosts(feedContent, feedWidth); 
+        // Lógica del Feed
+        loadFeedPosts(feedContent, feedWidth);
 
-    // 2. Crear el JScrollPane y asignarle un nombre
-    JScrollPane scrollPane = new JScrollPane(feedContent);
-    scrollPane.setName("FEED_SCROLL_PANE"); 
+        // 2. Crear el JScrollPane y asignarle un nombre
+        JScrollPane scrollPane = new JScrollPane(feedContent);
+        scrollPane.setName("FEED_SCROLL_PANE");
 
-    // --- CONFIGURACIÓN DE JSCROLLPANE (Añadida o verificada) ---
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-    scrollPane.setBorder(null);
-    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+        // --- CONFIGURACIÓN DE JSCROLLPANE (Añadida o verificada) ---
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-    // --- ZONA DE CORRECCIÓN: Declaración y configuración de GridBagConstraints (gbc) ---
-    // ESTO DEBE ESTAR AQUÍ, ANTES DE contentAreaWrapper.add(...)
-    GridBagConstraints gbc = new GridBagConstraints(); 
-    
-    // Configuración para que el JScrollPane se centre y se extienda verticalmente
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.fill = GridBagConstraints.VERTICAL;
+        // --- ZONA DE CORRECCIÓN: Declaración y configuración de GridBagConstraints (gbc) ---
+        // ESTO DEBE ESTAR AQUÍ, ANTES DE contentAreaWrapper.add(...)
+        GridBagConstraints gbc = new GridBagConstraints();
 
-    // AÑADIR el JScrollPane al contenedor principal usando gbc
-    contentAreaWrapper.add(scrollPane, gbc);
-    
-    return contentAreaWrapper;
-}
+        // Configuración para que el JScrollPane se centre y se extienda verticalmente
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.VERTICAL;
+
+        // AÑADIR el JScrollPane al contenedor principal usando gbc
+        contentAreaWrapper.add(scrollPane, gbc);
+
+        return contentAreaWrapper;
+    }
     // --- PANEL PRINCIPAL (FEED) (MODIFICADO) ---
-private JPanel crearPanelPrincipal() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
 
-    panel.add(crearSidebarDesktop(), BorderLayout.WEST);
-    
-    JPanel feedWrapper = crearFeedContentWrapper();
-    panel.add(feedWrapper, BorderLayout.CENTER);
+    private JPanel crearPanelPrincipal() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-    JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
-    contentAreaWrapper.setBackground(BG_COLOR);
+        panel.add(crearSidebarDesktop(), BorderLayout.WEST);
 
-    JPanel feedContent = new JPanel();
-    feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
-    feedContent.setBackground(BG_COLOR);
+        JPanel feedWrapper = crearFeedContentWrapper();
+        panel.add(feedWrapper, BorderLayout.CENTER);
 
-    int feedWidth = 550;
-    feedContent.setPreferredSize(new Dimension(feedWidth, 600));
-    feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
+        JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
+        contentAreaWrapper.setBackground(BG_COLOR);
 
-    // ** Lógica del Feed **
-    loadFeedPosts(feedContent, feedWidth); 
-    // ^ Se llama a un nuevo método para cargar el contenido
+        JPanel feedContent = new JPanel();
+        feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
+        feedContent.setBackground(BG_COLOR);
 
-    JScrollPane scrollPane = new JScrollPane(feedContent);
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-    scrollPane.setBorder(null);
-    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+        int feedWidth = 550;
+        feedContent.setPreferredSize(new Dimension(feedWidth, 600));
+        feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
 
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.fill = GridBagConstraints.VERTICAL;
+        // ** Lógica del Feed **
+        loadFeedPosts(feedContent, feedWidth);
+        // ^ Se llama a un nuevo método para cargar el contenido
 
-    contentAreaWrapper.add(scrollPane, gbc);
+        JScrollPane scrollPane = new JScrollPane(feedContent);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-    panel.add(contentAreaWrapper, BorderLayout.CENTER);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.VERTICAL;
 
-    return panel;
-    
-    
-}
+        contentAreaWrapper.add(scrollPane, gbc);
+
+        panel.add(contentAreaWrapper, BorderLayout.CENTER);
+
+        return panel;
+
+    }
 
 // --- NUEVO MÉTODO: Cargar y Mostrar el Feed ---
-private void loadFeedPosts(JPanel feedContent, int feedWidth) {
-    feedContent.removeAll(); 
+    private void loadFeedPosts(JPanel feedContent, int feedWidth) {
+        feedContent.removeAll();
 
-    if (loggedUser == null) {
-        JLabel err = new JLabel("Inicia sesión para ver el Feed.", SwingConstants.CENTER);
-        err.setForeground(TEXT_COLOR);
-        err.setAlignmentX(Component.CENTER_ALIGNMENT);
-        feedContent.add(err);
-        return;
-    }
-
-    // 1. Obtener todos los posts (propios y de seguidos)
-    // NOTA: Asumo que tienes un método getAllRelevantPostsByDate() en UserManager o PostManager
-    List<Post> allPosts = userManager.getAllRelevantPostsByDate(loggedUser); 
-
-    if (allPosts.isEmpty()) {
-        // Mensaje de feed vacío
-        JLabel emptyMessage = new JLabel("<html><div style='text-align: center; width: " + (feedWidth - 50) + "px;'><b>¡Bienvenido!</b><br>Sigue a tus amigos para ver publicaciones.</div></html>", SwingConstants.CENTER);
-        emptyMessage.setForeground(Color.GRAY);
-        emptyMessage.setFont(new Font("SansSerif", Font.BOLD, 14));
-        emptyMessage.setBorder(new EmptyBorder(50, 0, 0, 0));
-        emptyMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        feedContent.add(emptyMessage);
-    } else {
-        // 2. Crear y añadir el componente visual para cada post
-        for (Post post : allPosts) {
-            JPanel postPanel = createPostFeedView(post, feedWidth - 50); // Ajustar ancho
-            postPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            feedContent.add(postPanel);
-            feedContent.add(Box.createVerticalStrut(20)); // Espacio entre posts
+        if (loggedUser == null) {
+            JLabel err = new JLabel("Inicia sesión para ver el Feed.", SwingConstants.CENTER);
+            err.setForeground(TEXT_COLOR);
+            err.setAlignmentX(Component.CENTER_ALIGNMENT);
+            feedContent.add(err);
+            return;
         }
+
+        // 1. Obtener todos los posts (propios y de seguidos)
+        // NOTA: Asumo que tienes un método getAllRelevantPostsByDate() en UserManager o PostManager
+        List<Post> allPosts = userManager.getAllRelevantPostsByDate(loggedUser);
+
+        if (allPosts.isEmpty()) {
+            // Mensaje de feed vacío
+            JLabel emptyMessage = new JLabel("<html><div style='text-align: center; width: " + (feedWidth - 50) + "px;'><b>¡Bienvenido!</b><br>Sigue a tus amigos para ver publicaciones.</div></html>", SwingConstants.CENTER);
+            emptyMessage.setForeground(Color.GRAY);
+            emptyMessage.setFont(new Font("SansSerif", Font.BOLD, 14));
+            emptyMessage.setBorder(new EmptyBorder(50, 0, 0, 0));
+            emptyMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
+            feedContent.add(emptyMessage);
+        } else {
+            // 2. Crear y añadir el componente visual para cada post
+            for (Post post : allPosts) {
+                JPanel postPanel = createPostFeedView(post, feedWidth - 50); // Ajustar ancho
+                postPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                feedContent.add(postPanel);
+                feedContent.add(Box.createVerticalStrut(20)); // Espacio entre posts
+            }
+        }
+
+        feedContent.revalidate();
+        feedContent.repaint();
     }
-    
-    feedContent.revalidate();
-    feedContent.repaint();
-}
 
 // --- NUEVO MÉTODO: Vista Detallada de un Post para el Feed ---
-private JPanel createPostFeedView(Post post, int width) {
-    JPanel postPanel = new JPanel();
-    postPanel.setLayout(new BoxLayout(postPanel, BoxLayout.Y_AXIS));
-    postPanel.setBackground(POST_BG);
-    postPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
-    postPanel.setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
+    private JPanel createPostFeedView(Post post, int width) {
+        JPanel postPanel = new JPanel();
+        postPanel.setLayout(new BoxLayout(postPanel, BoxLayout.Y_AXIS));
+        postPanel.setBackground(POST_BG);
+        postPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
+        postPanel.setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
 
-    // 1. Cabecera (Username y Foto de Perfil)
-    JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-    header.setBackground(POST_BG);
-    header.setAlignmentX(Component.LEFT_ALIGNMENT);
-    
-    User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
-    
-    JLabel lblAuthor = new JLabel(post.getAuthorUsername());
-    lblAuthor.setFont(new Font("SansSerif", Font.BOLD, 16));
-    lblAuthor.setForeground(TEXT_COLOR);
+        // 1. Cabecera (Username y Foto de Perfil)
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        header.setBackground(POST_BG);
+        header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    JLabel lblProfilePic = new JLabel(cargarImagenCuadrada(postAuthor.getFotoPath(), 30));
-    
-    header.add(lblProfilePic);
-    header.add(lblAuthor);
-    postPanel.add(header);
+        User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
 
-    // 2. Imagen del Post
-    int imageSize = width; // La imagen ocupa todo el ancho del post
-    JLabel lblImage = new JLabel();
-    ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imageSize);
-    if (postIcon != null) {
-        lblImage.setIcon(postIcon);
-    } else {
-        lblImage.setText("No Image");
-        lblImage.setForeground(Color.RED);
+        JLabel lblAuthor = new JLabel(post.getAuthorUsername());
+        lblAuthor.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblAuthor.setForeground(TEXT_COLOR);
+
+        JLabel lblProfilePic = new JLabel(cargarImagenCuadrada(postAuthor.getFotoPath(), 30));
+
+        header.add(lblProfilePic);
+        header.add(lblAuthor);
+        postPanel.add(header);
+
+        // 2. Imagen del Post
+        int imageSize = width; // La imagen ocupa todo el ancho del post
+        JLabel lblImage = new JLabel();
+        ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imageSize);
+        if (postIcon != null) {
+            lblImage.setIcon(postIcon);
+        } else {
+            lblImage.setText("No Image");
+            lblImage.setForeground(Color.RED);
+        }
+        lblImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        postPanel.add(lblImage);
+
+        // 3. Botones (Like y Comentar)
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        actions.setBackground(POST_BG);
+        actions.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Botón de Like
+        JButton btnLike = createIconButton("💖", 24);
+        // Necesitas un método para crear un botón con un ícono o emoji
+        btnLike.setForeground(post.isLikedBy(loggedUser.getUsername()) ? Color.RED : TEXT_COLOR);
+        btnLike.addActionListener(e -> handleLikeAction(post, btnLike));
+        actions.add(btnLike);
+
+        // Contador de Likes
+        JLabel lblLikes = new JLabel(post.getLikesCount() + " likes");
+        lblLikes.setForeground(TEXT_COLOR);
+        lblLikes.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        actions.add(lblLikes);
+        actions.add(Box.createHorizontalStrut(20));
+
+        // Botón de Comentar (Asume un ícono de burbuja de diálogo "💬")
+        JButton btnComment = createIconButton("💬", 24);
+        btnComment.addActionListener(e -> showCommentDialog(post));
+        actions.add(btnComment);
+
+        postPanel.add(actions);
+
+        // 4. Descripción (Caption)
+        JTextArea txtCaption = new JTextArea(post.getCaption());
+        txtCaption.setEditable(false);
+        txtCaption.setBackground(POST_BG);
+        txtCaption.setForeground(TEXT_COLOR);
+        txtCaption.setLineWrap(true);
+        txtCaption.setWrapStyleWord(true);
+        txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        txtCaption.setBorder(new EmptyBorder(5, 15, 10, 15));
+        txtCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        postPanel.add(txtCaption);
+
+        return postPanel;
     }
-    lblImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-    postPanel.add(lblImage);
-
-    // 3. Botones (Like y Comentar)
-    JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-    actions.setBackground(POST_BG);
-    actions.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-    // Botón de Like
-    JButton btnLike = createIconButton("💖", 24); 
-    // Necesitas un método para crear un botón con un ícono o emoji
-    btnLike.setForeground(post.isLikedBy(loggedUser.getUsername()) ? Color.RED : TEXT_COLOR);
-    btnLike.addActionListener(e -> handleLikeAction(post, btnLike));
-    actions.add(btnLike);
-    
-    // Contador de Likes
-    JLabel lblLikes = new JLabel(post.getLikesCount() + " likes");
-    lblLikes.setForeground(TEXT_COLOR);
-    lblLikes.setFont(new Font("SansSerif", Font.PLAIN, 12));
-    actions.add(lblLikes);
-    actions.add(Box.createHorizontalStrut(20));
-
-
-    // Botón de Comentar (Asume un ícono de burbuja de diálogo "💬")
-    JButton btnComment = createIconButton("💬", 24);
-    btnComment.addActionListener(e -> showCommentDialog(post));
-    actions.add(btnComment);
-    
-    postPanel.add(actions);
-
-    // 4. Descripción (Caption)
-    JTextArea txtCaption = new JTextArea(post.getCaption());
-    txtCaption.setEditable(false);
-    txtCaption.setBackground(POST_BG);
-    txtCaption.setForeground(TEXT_COLOR);
-    txtCaption.setLineWrap(true);
-    txtCaption.setWrapStyleWord(true);
-    txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
-    txtCaption.setBorder(new EmptyBorder(5, 15, 10, 15));
-    txtCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-    postPanel.add(txtCaption);
-
-    return postPanel;
-}
 
 // --- NUEVO MÉTODO: Crea el panel con el grid de posts ---
-private JButton createIconButton(String text, int size) {
-    JButton btn = new JButton(text);
-    btn.setFont(new Font("SansSerif", Font.BOLD, size));
-    btn.setForeground(TEXT_COLOR); // Color del texto (o del emoji)
-    btn.setBackground(POST_BG); // Fondo del post (para que se mezcle)
-    btn.setBorderPainted(false); // Quitar el borde
-    btn.setContentAreaFilled(false); // Quitar el color de fondo del área de contenido
-    btn.setFocusPainted(false); // Quitar el recuadro de foco
-    btn.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Cursor de mano al pasar por encima
-    return btn;
-}
-
+    private JButton createIconButton(String text, int size) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("SansSerif", Font.BOLD, size));
+        btn.setForeground(TEXT_COLOR); // Color del texto (o del emoji)
+        btn.setBackground(POST_BG); // Fondo del post (para que se mezcle)
+        btn.setBorderPainted(false); // Quitar el borde
+        btn.setContentAreaFilled(false); // Quitar el color de fondo del área de contenido
+        btn.setFocusPainted(false); // Quitar el recuadro de foco
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Cursor de mano al pasar por encima
+        return btn;
+    }
 
 // También podrías necesitar un createStatPanel para las stats del perfil
-
 // ** MODIFICACIÓN EN createPostGridPanel (ahora crearPostsGrid) **
 // Debe devolver SÓLO el JPanel con las miniaturas, no el JScrollPane.
-
 // --- REEMPLAZO COMPLETO DEL MÉTODO crearPostsGrid ---
+    private JPanel crearPostsGrid(User targetUser) {
+        List<Post> userPosts = targetUser.getPosts();
 
-private JPanel crearPostsGrid(User targetUser) {
-    List<Post> userPosts = targetUser.getPosts();
-    
-    // Si no hay posts, devolvemos el wrapper centrado (tal como lo tienes)
-    if (userPosts.isEmpty()) {
-        JLabel noPosts = new JLabel("No hay publicaciones aún.", SwingConstants.CENTER);
-        noPosts.setForeground(Color.GRAY);
-        JPanel wrapper = new JPanel(new GridBagLayout());
-        wrapper.setBackground(BG_COLOR);
-        wrapper.add(noPosts);
-        return wrapper;
-    }
-
-    // --- 1. Panel de Posts: Usa GridBagLayout para control total ---
-    JPanel gridPanel = new JPanel(new GridBagLayout());
-    gridPanel.setBackground(BG_COLOR);
-    gridPanel.setBorder(new EmptyBorder(5, 5, 5, 5)); // Pequeño padding general
-    
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.anchor = GridBagConstraints.NORTHWEST; // Pegar las miniaturas arriba y a la izquierda
-    gbc.insets = new Insets(1, 1, 1, 1); // Espacio entre miniaturas (1px)
-
-    // Tamaño fijo de la miniatura
-    int thumbnailSize = 200; 
-    int col = 0;
-    int row = 0;
-
-    for (Post post : userPosts) {
-        // --- 2. Configurar la miniatura como JButton ---
-        JButton postThumbnail = new JButton();
-        postThumbnail.setPreferredSize(new Dimension(thumbnailSize, thumbnailSize));
-        postThumbnail.setBorder(null);
-        postThumbnail.setBackground(POST_BG);
-        postThumbnail.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // Cargar y escalar la imagen (Usando tu método existente)
-        ImageIcon icon = cargarImagenCuadrada(post.getImagePath(), thumbnailSize);
-        if (icon != null) {
-            postThumbnail.setIcon(icon);
-        } else {
-            postThumbnail.setText("IMG");
-            postThumbnail.setForeground(Color.RED);
+        // Si no hay posts, devolvemos el wrapper centrado (tal como lo tienes)
+        if (userPosts.isEmpty()) {
+            JLabel noPosts = new JLabel("No hay publicaciones aún.", SwingConstants.CENTER);
+            noPosts.setForeground(Color.GRAY);
+            JPanel wrapper = new JPanel(new GridBagLayout());
+            wrapper.setBackground(BG_COLOR);
+            wrapper.add(noPosts);
+            return wrapper;
         }
-        
-        postThumbnail.addActionListener(e -> showPostDetail(post));
 
-        // --- 3. Aplicar GridBagConstraints ---
-        gbc.gridx = col; // Columna actual
-        gbc.gridy = row; // Fila actual
-        gridPanel.add(postThumbnail, gbc);
+        // --- 1. Panel de Posts: Usa GridBagLayout para control total ---
+        JPanel gridPanel = new JPanel(new GridBagLayout());
+        gridPanel.setBackground(BG_COLOR);
+        gridPanel.setBorder(new EmptyBorder(5, 5, 5, 5)); // Pequeño padding general
 
-        // --- 4. Incrementar posición ---
-        col++;
-        if (col >= 3) {
-            col = 0;
-            row++;
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTHWEST; // Pegar las miniaturas arriba y a la izquierda
+        gbc.insets = new Insets(1, 1, 1, 1); // Espacio entre miniaturas (1px)
+
+        // Tamaño fijo de la miniatura
+        int thumbnailSize = 200;
+        int col = 0;
+        int row = 0;
+
+        for (Post post : userPosts) {
+            // --- 2. Configurar la miniatura como JButton ---
+            JButton postThumbnail = new JButton();
+            postThumbnail.setPreferredSize(new Dimension(thumbnailSize, thumbnailSize));
+            postThumbnail.setBorder(null);
+            postThumbnail.setBackground(POST_BG);
+            postThumbnail.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            // Cargar y escalar la imagen (Usando tu método existente)
+            ImageIcon icon = cargarImagenCuadrada(post.getImagePath(), thumbnailSize);
+            if (icon != null) {
+                postThumbnail.setIcon(icon);
+            } else {
+                postThumbnail.setText("IMG");
+                postThumbnail.setForeground(Color.RED);
+            }
+
+            postThumbnail.addActionListener(e -> showPostDetail(post));
+
+            // --- 3. Aplicar GridBagConstraints ---
+            gbc.gridx = col; // Columna actual
+            gbc.gridy = row; // Fila actual
+            gridPanel.add(postThumbnail, gbc);
+
+            // --- 4. Incrementar posición ---
+            col++;
+            if (col >= 3) {
+                col = 0;
+                row++;
+            }
         }
+
+        // --- 5. Rellenar el espacio restante si la última fila está incompleta ---
+        // Esto es crucial. Rellena el espacio horizontal restante para que los posts
+        // siempre se peguen a la izquierda sin estirarse.
+        if (col > 0) {
+            gbc.gridx = col;
+            gbc.weightx = 1.0; // Hace que este componente tome todo el espacio restante
+            gridPanel.add(Box.createHorizontalGlue(), gbc);
+        }
+
+        // Hace que el contenido se pegue a la parte superior (Norte)
+        gbc.gridx = 0;
+        gbc.gridy = row + 1;
+        gbc.weighty = 1.0; // Hace que este componente tome todo el espacio vertical restante
+        gridPanel.add(Box.createVerticalGlue(), gbc);
+
+        return gridPanel;
     }
 
-    // --- 5. Rellenar el espacio restante si la última fila está incompleta ---
-    // Esto es crucial. Rellena el espacio horizontal restante para que los posts
-    // siempre se peguen a la izquierda sin estirarse.
-    if (col > 0) {
-        gbc.gridx = col;
-        gbc.weightx = 1.0; // Hace que este componente tome todo el espacio restante
-        gridPanel.add(Box.createHorizontalGlue(), gbc);
-    }
-    
-    // Hace que el contenido se pegue a la parte superior (Norte)
-    gbc.gridx = 0;
-    gbc.gridy = row + 1;
-    gbc.weighty = 1.0; // Hace que este componente tome todo el espacio vertical restante
-    gridPanel.add(Box.createVerticalGlue(), gbc);
-
-    return gridPanel;
-}
     private JButton createLikeButton(Post post) {
-    JButton btnLike = new JButton();
-    btnLike.setFont(new Font("SansSerif", Font.PLAIN, 20));
-    btnLike.setBorderPainted(false);
-    btnLike.setOpaque(false);
-    btnLike.setContentAreaFilled(false);
-    
-    // Inicializa el botón con el estado correcto
-    if (loggedUser != null && post.isLikedBy(loggedUser.getUsername())) {
-        btnLike.setText("❤️"); // Ya le dio like
-    } else {
-        btnLike.setText("♡"); // Sin like
+        JButton btnLike = new JButton();
+        btnLike.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        btnLike.setBorderPainted(false);
+        btnLike.setOpaque(false);
+        btnLike.setContentAreaFilled(false);
+
+        // Inicializa el botón con el estado correcto
+        if (loggedUser != null && post.isLikedBy(loggedUser.getUsername())) {
+            btnLike.setText("❤️"); // Ya le dio like
+        } else {
+            btnLike.setText("♡"); // Sin like
+        }
+        return btnLike;
     }
-    return btnLike;
-}
 // --- NUEVO MÉTODO: Maneja el like/unlike de un post ---
-private void handleLikeAction(Post post, JButton likeButton) {
-    if (loggedUser == null) {
-        JOptionPane.showMessageDialog(this, "Debes iniciar sesión para dar like.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
+
+    private void handleLikeAction(Post post, JButton likeButton) {
+        if (loggedUser == null) {
+            JOptionPane.showMessageDialog(this, "Debes iniciar sesión para dar like.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String username = loggedUser.getUsername();
+        User author = userManager.getUserByUsername(post.getAuthorUsername());
+        if (author == null) {
+            return;
+        }
+
+        if (post.isLikedBy(username)) {
+            post.unlike(username);
+            likeButton.setText("♡");
+            likeButton.setForeground(Color.GRAY);
+        } else {
+            post.like(username);
+            likeButton.setText("❤️");
+            likeButton.setForeground(Color.RED);
+        }
+
+        userManager.saveUser(author);
+
+        if (post.getAuthorUsername().equals(loggedUser.getUsername())) {
+            loggedUser = userManager.getUserByUsername(username);
+        }
     }
 
-    User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
-    
-    if (post.isLikedBy(loggedUser.getUsername())) {
-        // --- QUITAR LIKE ---
-        post.unlike(loggedUser.getUsername());
-        likeButton.setText("❤"); // Corazón vacío
-        likeButton.setForeground(Color.GRAY); // Color Gris
-    } else {
-        // --- DAR LIKE ---
-        post.like(loggedUser.getUsername());
-        likeButton.setText("❤️"); // Corazón lleno
-        likeButton.setForeground(Color.RED); // Color Rojo
-    }
-    
-    // Guarda el cambio del post en el archivo del autor.
-    userManager.saveUser(postAuthor); 
-    
-    // (La navegación al inicio ha sido eliminada, lo cual es correcto)
-}
 // --- NUEVO MÉTODO: Muestra el diálogo de comentarios ---
-private void showCommentDialog(Post post) {
-    if (loggedUser == null) {
-        JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Comentarios de " + post.getAuthorUsername(), true);
-    dialog.setLayout(new BorderLayout());
-    dialog.setSize(500, 600);
-    dialog.setLocationRelativeTo(mainPanel);
-    dialog.getContentPane().setBackground(POST_BG);
-
-    // 1. Panel de Comentarios Existentes
-    JPanel commentsPanel = new JPanel();
-    commentsPanel.setLayout(new BoxLayout(commentsPanel, BoxLayout.Y_AXIS));
-    commentsPanel.setBackground(POST_BG);
-    commentsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-    // Lógica para cargar y mostrar los comentarios (opción "a" de tu instrucción)
-    List<Comment> postComments = post.getComments();
-    
-    if (postComments.isEmpty()) {
-        JLabel empty = new JLabel("Sé el primero en comentar.");
-        empty.setForeground(Color.GRAY);
-        commentsPanel.add(empty);
-    } else {
-        // Ordenar del más reciente al más antiguo
-        postComments.sort(Comparator.comparing(Comment::getDate).reversed()); 
-
-        for (Comment comment : postComments) {
-            JLabel lblComment = new JLabel("<html><b>" + comment.getUsername() + "</b>: " + comment.getText() + "<br><small style='color: gray;'>" + comment.getFormattedDate() + "</small></html>");
-            lblComment.setForeground(TEXT_COLOR);
-            lblComment.setBorder(new EmptyBorder(5, 0, 5, 0));
-            commentsPanel.add(lblComment);
-            commentsPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+    private void showCommentDialog(Post post) {
+        if (loggedUser == null) {
+            JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-    }
 
-    JScrollPane scrollComments = new JScrollPane(commentsPanel);
-    scrollComments.setBorder(null);
-    dialog.add(scrollComments, BorderLayout.CENTER);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Comentarios de " + post.getAuthorUsername(), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(500, 600);
+        dialog.setLocationRelativeTo(mainPanel);
+        dialog.getContentPane().setBackground(POST_BG);
 
-    // 2. Panel para Agregar Nuevo Comentario
-    JPanel addCommentPanel = new JPanel(new BorderLayout(5, 5));
-    addCommentPanel.setBackground(POST_BG);
-    addCommentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // 1. Panel de Comentarios Existentes
+        JPanel commentsPanel = new JPanel();
+        commentsPanel.setLayout(new BoxLayout(commentsPanel, BoxLayout.Y_AXIS));
+        commentsPanel.setBackground(POST_BG);
+        commentsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-    JTextField txtComment = styledTextField("Añadir un comentario...");
-    JButton btnPostComment = styledButton("Enviar");
-    btnPostComment.setPreferredSize(new Dimension(80, 35));
-    btnPostComment.setFont(new Font("SansSerif", Font.BOLD, 14));
+        // Lógica para cargar y mostrar los comentarios (opción "a" de tu instrucción)
+        List<Comment> postComments = post.getComments();
 
-    btnPostComment.addActionListener(e -> {
-        String commentText = txtComment.getText().trim();
-        if (!commentText.isEmpty()) {
-            User author = userManager.getUserByUsername(post.getAuthorUsername());
+        if (postComments.isEmpty()) {
+            JLabel empty = new JLabel("Sé el primero en comentar.");
+            empty.setForeground(Color.GRAY);
+            commentsPanel.add(empty);
+        } else {
+            // Ordenar del más reciente al más antiguo
+            postComments.sort(Comparator.comparing(Comment::getDate).reversed());
 
-            // Crear el nuevo comentario
-            Comment newComment = new Comment(loggedUser.getUsername(), commentText);
-            
-            // Añadir al post y guardar
-            post.addComment(newComment);
-            userManager.saveUser(author); 
-
-            // Recargar la vista de comentarios o el diálogo
-            dialog.dispose();
-            showCommentDialog(post); // Llama recursivamente para recargar
+            for (Comment comment : postComments) {
+                JLabel lblComment = new JLabel("<html><b>" + comment.getUsername() + "</b>: " + comment.getText() + "<br><small style='color: gray;'>" + comment.getFormattedDate() + "</small></html>");
+                lblComment.setForeground(TEXT_COLOR);
+                lblComment.setBorder(new EmptyBorder(5, 0, 5, 0));
+                commentsPanel.add(lblComment);
+                commentsPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+            }
         }
-    });
 
-    addCommentPanel.add(txtComment, BorderLayout.CENTER);
-    addCommentPanel.add(btnPostComment, BorderLayout.EAST);
-    
-    dialog.add(addCommentPanel, BorderLayout.SOUTH);
-    dialog.setVisible(true);
-}
+        JScrollPane scrollComments = new JScrollPane(commentsPanel);
+        scrollComments.setBorder(null);
+        dialog.add(scrollComments, BorderLayout.CENTER);
+
+        // 2. Panel para Agregar Nuevo Comentario
+        JPanel addCommentPanel = new JPanel(new BorderLayout(5, 5));
+        addCommentPanel.setBackground(POST_BG);
+        addCommentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JTextField txtComment = styledTextField("Añadir un comentario...");
+        JButton btnPostComment = styledButton("Enviar");
+        btnPostComment.setPreferredSize(new Dimension(80, 35));
+        btnPostComment.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        btnPostComment.addActionListener(e -> {
+            String commentText = txtComment.getText().trim();
+            if (!commentText.isEmpty()) {
+                User author = userManager.getUserByUsername(post.getAuthorUsername());
+
+                // Crear el nuevo comentario
+                Comment newComment = new Comment(loggedUser.getUsername(), commentText);
+
+                // Añadir al post y guardar
+                post.addComment(newComment);
+                userManager.saveUser(author);
+
+                // Recargar la vista de comentarios o el diálogo
+                dialog.dispose();
+                showCommentDialog(post); // Llama recursivamente para recargar
+            }
+        });
+
+        addCommentPanel.add(txtComment, BorderLayout.CENTER);
+        addCommentPanel.add(btnPostComment, BorderLayout.EAST);
+
+        dialog.add(addCommentPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
 
     // --- PANEL CREAR POST (NUEVO) ---
     private JPanel crearPanelCrearPost() {
@@ -768,9 +786,25 @@ private void showCommentDialog(Post post) {
             int returnValue = fileChooser.showOpenDialog(null);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
-                imagePath[0] = selectedFile.getAbsolutePath();
-                lblImageStatus.setText("Archivo: " + selectedFile.getName());
-                lblImageStatus.setForeground(BTN_BLUE);
+                try {
+                    // Crear un nombre único para guardar en la raíz
+                    String newFileName = "img_" + System.currentTimeMillis() + "_" + selectedFile.getName();
+
+                    // Ruta de la raíz del proyecto
+                    String projectRoot = System.getProperty("user.dir");
+                    File destFile = new File(projectRoot, newFileName);
+
+                    // Copiar el archivo seleccionado a la raíz del proyecto
+                    java.nio.file.Files.copy(selectedFile.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    // Guardamos solo el nombre del archivo
+                    imagePath[0] = newFileName;
+                    lblImageStatus.setText("Archivo guardado: " + newFileName);
+                    lblImageStatus.setForeground(BTN_BLUE);
+                } catch (Exception ex) {
+                    lblImageStatus.setText("Error al guardar imagen");
+                    lblImageStatus.setForeground(Color.RED);
+                }
             }
         });
 
@@ -838,303 +872,298 @@ private void showCommentDialog(Post post) {
 
         return panel;
     }
-    
 
-private void showPostDetail(Post post) {
-    
-    // Almacena datos de identificación del post original
-    String originalAuthorUsername = post.getAuthorUsername();
-    String originalImagePath = post.getImagePath();
-    String originalPostId = post.getId(); // Asume que getId() ya maneja nulos de forma segura
-    
-    // 1. OBTENER LA VERSIÓN MÁS RECIENTE DEL AUTOR DESDE EL ARCHIVO
-    User author = userManager.getUserByUsername(originalAuthorUsername);
-    
-    if (author == null) return; 
-    
-    // 2. ENCONTRAR EL POST REFRESCADO en la lista del autor recargado.
-    Post refreshedPost = author.getPosts().stream()
-                               // Prioridad 1: Buscar por ID de forma segura
-                               .filter(p -> java.util.Objects.equals(p.getId(), originalPostId))
-                               .findFirst()
-                               // Respaldo: Si el ID falla o es nulo, buscar por imagePath
-                               .orElseGet(() -> author.getPosts().stream()
-                                                    .filter(p -> p.getImagePath().equals(originalImagePath))
-                                                    .findFirst()
-                                                    .orElse(post)); 
-                               
-    // 3. Manipulación del CardLayout (La lógica que faltaba)
-    if (mainPanel.getLayout() instanceof CardLayout) {
-        
-        // --- A. Crear el panel de detalle usando el post REFRESCADO ---
-        JPanel detailView = createDetailedPostPanel(refreshedPost); 
+    private void showPostDetail(Post post) {
 
-        CardLayout cl = (CardLayout) mainPanel.getLayout();
-        
-        // --- B. Remover la tarjeta anterior (limpieza) ---
-        // Eliminar el componente con el nombre "POST_DETAIL_VIEW" si ya existe
-        for (Component comp : mainPanel.getComponents()) {
-            if (comp.getName() != null && comp.getName().equals("POST_DETAIL_VIEW")) {
-                mainPanel.remove(comp);
-                break;
-            }
-        }
-        
-        // --- C. Añadir y Mostrar la nueva tarjeta ---
-        detailView.setName("POST_DETAIL_VIEW"); // Le damos un nombre para la limpieza futura
-        mainPanel.add(detailView, "POST_DETAIL"); // Usamos "POST_DETAIL" como clave para el CardLayout
-        
-        cl.show(mainPanel, "POST_DETAIL");
-        mainPanel.revalidate();
-        mainPanel.repaint();
-    }
-}
+        // Almacena datos de identificación del post original
+        String originalAuthorUsername = post.getAuthorUsername();
+        String originalImagePath = post.getImagePath();
+        String originalPostId = post.getId(); // Asume que getId() ya maneja nulos de forma segura
 
-private JPanel createDetailedPostPanel(Post post) {
-    // El panel principal usa BorderLayout.
-    JPanel panel = new JPanel(new BorderLayout()); 
-    panel.setBackground(BG_COLOR);
+        // 1. OBTENER LA VERSIÓN MÁS RECIENTE DEL AUTOR DESDE EL ARCHIVO
+        User author = userManager.getUserByUsername(originalAuthorUsername);
 
-    // --- Botón de Cierre (X) ---
-    JButton btnClose = new JButton("X");
-    btnClose.setFont(new Font("SansSerif", Font.BOLD, 16));
-    btnClose.setForeground(TEXT_COLOR);
-    btnClose.setBackground(BG_COLOR);
-    btnClose.setBorder(new EmptyBorder(5, 10, 5, 10));
-    btnClose.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-    // Panel para alinear la "X" a la derecha (EAST)
-    JPanel closePanel = new JPanel(new BorderLayout());
-    closePanel.setBackground(BG_COLOR);
-    closePanel.add(btnClose, BorderLayout.EAST);
-    
-    // **CORRECCIÓN 2: Lógica de Cierre Simplificada**
-    btnClose.addActionListener(e -> {
-        CardLayout cl = (CardLayout) mainPanel.getLayout();
-        // Vuelve solo a la tarjeta deseada (ej: la vista de perfil)
-        cl.show(mainPanel, "PROFILE_SEARCH");
-    });
-    
-    // --- Contenedor de Contenido (Imagen + Comentarios) ---
-    // Este contenedor interno SÍ usa GridBagLayout.
-    JPanel contentWrapper = new JPanel(new GridBagLayout());
-    contentWrapper.setBackground(POST_BG);
-    contentWrapper.setBorder(new LineBorder(BORDER_COLOR, 1));
-    
-    // **Ajuste de Dimensiones** (Manteniendo tus valores de ejemplo)
-    contentWrapper.setPreferredSize(new Dimension(800, 500)); 
-    
-    GridBagConstraints gbc = new GridBagConstraints();
-    int imgSize = 500; 
-    
-    // --- 2.1. IMAGEN DEL POST ---
-    JLabel lblImage = new JLabel();
-    ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imgSize);
-    
-    if (postIcon != null) {
-        lblImage.setIcon(postIcon);
-    } else {
-        lblImage.setText("Imagen no disponible");
-        lblImage.setForeground(Color.RED);
-    }
-    lblImage.setPreferredSize(new Dimension(imgSize, imgSize));
-    
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 0.4;
-    gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    contentWrapper.add(lblImage, gbc);
-
-    // --- 2.2. PANEL DE COMENTARIOS Y DETALLES (LADO DERECHO) ---
-    JPanel sidePanel = createCommentsSidePanel(post);
-    sidePanel.setPreferredSize(new Dimension(300, imgSize)); // Ancho preferido del panel lateral
-    // Se recomienda quitar el setMaximumSize, ya que puede restringir el GBL innecesariamente.
-    // sidePanel.setMaximumSize(new Dimension(300, imgSize + 100)); 
-    
-    gbc.gridx = 1;
-    gbc.weightx = 0.6;
-    gbc.weighty = 1.0;
-    contentWrapper.add(sidePanel, gbc);
-
-    // --------------------------------------------------------------------------
-    // **CORRECCIÓN 1: Eliminación del conflicto de Layouts**
-    // --------------------------------------------------------------------------
-    
-    // 1. Añadir el botón de cierre al NORTE (BorderLayout)
-    panel.add(closePanel, BorderLayout.NORTH); 
-    
-    // 2. Añadir el contenido principal al CENTRO (BorderLayout)
-    // El BorderLayout centra el contentWrapper horizontalmente por defecto si es más pequeño
-    // que el panel. Usar BorderLayout.CENTER consume el espacio restante.
-    panel.add(contentWrapper, BorderLayout.CENTER); 
-    
-    return panel;
-}
-
-private JPanel createCommentsSidePanel(Post post) {
-    JPanel sidePanel = new JPanel(new BorderLayout());
-    sidePanel.setBackground(POST_BG);
-
-    // --- A. CABECERA (AUTOR DEL POST) ---
-    JPanel header = new JPanel(new BorderLayout());
-    header.setBackground(POST_BG);
-    header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
-    
-    // Etiqueta del autor (Clicable)
-    JButton btnAuthor = new JButton("@" + post.getAuthorUsername());
-    btnAuthor.setFont(new Font("SansSerif", Font.BOLD, 14));
-    btnAuthor.setForeground(TEXT_COLOR);
-    btnAuthor.setBackground(POST_BG);
-    btnAuthor.setBorderPainted(false);
-    btnAuthor.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    
-    btnAuthor.addActionListener(e -> {
-        User author = userManager.getUserByUsername(post.getAuthorUsername());
-        if (author != null) {
-            // Regresar al panel de búsqueda/perfiles
-            CardLayout cl = (CardLayout) mainPanel.getLayout();
-            cl.show(mainPanel, "PROFILE_SEARCH");
-            
-            // Mostrar el perfil del autor en el sub-CardLayout
-            mostrarPerfil(author); 
-        }
-    });
-
-    header.add(btnAuthor, BorderLayout.WEST);
-    sidePanel.add(header, BorderLayout.NORTH);
-
-    // --- B. ÁREA DE COMENTARIOS Y CAPTION (CENTRO) ---
-    // Usamos BoxLayout para la descripción y los comentarios
-    JPanel commentsAndCaptionPanel = new JPanel();
-    commentsAndCaptionPanel.setLayout(new BoxLayout(commentsAndCaptionPanel, BoxLayout.Y_AXIS));
-    commentsAndCaptionPanel.setBackground(POST_BG);
-    commentsAndCaptionPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-    // 1. Descripción (Caption) del Post
-    JLabel lblCaption = new JLabel("<html><b>" + post.getAuthorUsername() + "</b>: " + post.getCaption() + "</html>");
-    lblCaption.setForeground(TEXT_COLOR);
-    lblCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
-    commentsAndCaptionPanel.add(lblCaption);
-    commentsAndCaptionPanel.add(Box.createVerticalStrut(10));
-    
-    // 2. Comentarios
-    for (Comment comment : post.getComments()) {
-        commentsAndCaptionPanel.add(createClickableComment(post, comment));
-        commentsAndCaptionPanel.add(Box.createVerticalStrut(5));
-    }
-    
-    JScrollPane commentsScrollPane = new JScrollPane(commentsAndCaptionPanel);
-    commentsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    commentsScrollPane.setBorder(null);
-    sidePanel.add(commentsScrollPane, BorderLayout.CENTER);
-
-    // --- C. BOTONES DE ACCIÓN Y AÑADIR COMENTARIO (SUR) ---
-    JPanel actionAndInputPanel = new JPanel(new BorderLayout());
-    actionAndInputPanel.setBackground(POST_BG);
-
-    // 1. Panel de Likes (Actualización en tiempo real)
-    JPanel likePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-    likePanel.setBackground(POST_BG);
-    
-    JButton btnLike = createLikeButton(post);
-    JLabel lblLikesCount = new JLabel(post.getLikesCount() + " Me gusta");
-    lblLikesCount.setForeground(TEXT_COLOR);
-    lblLikesCount.setFont(new Font("SansSerif", Font.BOLD, 12));
-    
-    // Lógica para el Like (Actualización inmediata)
-    btnLike.addActionListener(e -> {
-        // Usa tu método existente, pero actualiza solo las etiquetas locales
-        handleLikeAction(post, btnLike); // Esto guarda la persistencia y actualiza el botón de forma visual
-        lblLikesCount.setText(post.getLikesCount() + " Me gusta"); 
-    });
-    
-    likePanel.add(btnLike);
-    likePanel.add(lblLikesCount);
-    actionAndInputPanel.add(likePanel, BorderLayout.NORTH);
-
-    // 2. Input para Añadir Comentario
-    actionAndInputPanel.add(createCommentInputPanel(post), BorderLayout.CENTER);
-    
-    sidePanel.add(actionAndInputPanel, BorderLayout.SOUTH);
-
-    return sidePanel;
-}
-
-    // --- NUEVO MÉTODO: Crea el input para agregar un comentario ---
-
-private JPanel createCommentInputPanel(Post post) {
-    JPanel addCommentPanel = new JPanel(new BorderLayout(5, 5));
-    addCommentPanel.setBackground(POST_BG);
-    addCommentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-    // Campo de texto para el comentario (usando tu método de estilo existente)
-    JTextField txtComment = styledTextField("Añadir un comentario..."); 
-    
-    // Botón de Enviar (usando tu método de estilo existente)
-    JButton btnPostComment = styledButton("Enviar");
-    btnPostComment.setPreferredSize(new Dimension(80, 35));
-    btnPostComment.setFont(new Font("SansSerif", Font.BOLD, 14));
-    
-    // Lógica al hacer clic en ENVIAR
-    btnPostComment.addActionListener(e -> {
-        String commentText = txtComment.getText().trim();
-        if (loggedUser == null) {
-            JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (author == null) {
             return;
         }
-        
-        if (!commentText.isEmpty()) {
-            User author = userManager.getUserByUsername(post.getAuthorUsername());
 
-            // 1. Crear y añadir el nuevo comentario
-            Comment newComment = new Comment(loggedUser.getUsername(), commentText);
-            post.addComment(newComment);
-            
-            // 2. Guardar la persistencia
-            userManager.saveUser(author); 
-            
-            // 3. Limpiar el campo de texto
-            txtComment.setText("");
-            
-            // 4. Recargar la vista de detalle para mostrar el nuevo comentario
-            showPostDetail(post); 
-        }
-    });
+        // 2. ENCONTRAR EL POST REFRESCADO en la lista del autor recargado.
+        Post refreshedPost = author.getPosts().stream()
+                // Prioridad 1: Buscar por ID de forma segura
+                .filter(p -> java.util.Objects.equals(p.getId(), originalPostId))
+                .findFirst()
+                // Respaldo: Si el ID falla o es nulo, buscar por imagePath
+                .orElseGet(() -> author.getPosts().stream()
+                .filter(p -> p.getImagePath().equals(originalImagePath))
+                .findFirst()
+                .orElse(post));
 
-    addCommentPanel.add(txtComment, BorderLayout.CENTER);
-    addCommentPanel.add(btnPostComment, BorderLayout.EAST);
-    
-    return addCommentPanel;
-}
+        // 3. Manipulación del CardLayout (La lógica que faltaba)
+        if (mainPanel.getLayout() instanceof CardLayout) {
 
-private JButton createClickableComment(Post post, Comment comment) {
-    // Usamos JButton para que sea fácilmente clicable y se vea como link
-    JButton btnComment = new JButton();
-    btnComment.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-    btnComment.setBackground(POST_BG);
-    btnComment.setBorderPainted(false);
-    btnComment.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    
-    // Texto del comentario formateado (Username en negrita, texto normal)
-    JLabel lblUsername = new JLabel("<html><b>" + comment.getUsername() + "</b>: " + comment.getText() + "</html>");
-    lblUsername.setForeground(TEXT_COLOR);
-    lblUsername.setFont(new Font("SansSerif", Font.PLAIN, 12));
-    
-    btnComment.add(lblUsername);
+            // --- A. Crear el panel de detalle usando el post REFRESCADO ---
+            JPanel detailView = createDetailedPostPanel(refreshedPost);
 
-    btnComment.addActionListener(e -> {
-        User commenter = userManager.getUserByUsername(comment.getUsername());
-        if (commenter != null) {
-            // Al hacer clic en el comentario, volvemos a la vista de perfil y mostramos al comentarista
             CardLayout cl = (CardLayout) mainPanel.getLayout();
-            cl.show(mainPanel, "PROFILE_SEARCH"); 
-            mostrarPerfil(commenter); // Muestra el perfil del comentarista
+
+            // --- B. Remover la tarjeta anterior (limpieza) ---
+            // Eliminar el componente con el nombre "POST_DETAIL_VIEW" si ya existe
+            for (Component comp : mainPanel.getComponents()) {
+                if (comp.getName() != null && comp.getName().equals("POST_DETAIL_VIEW")) {
+                    mainPanel.remove(comp);
+                    break;
+                }
+            }
+
+            // --- C. Añadir y Mostrar la nueva tarjeta ---
+            detailView.setName("POST_DETAIL_VIEW"); // Le damos un nombre para la limpieza futura
+            mainPanel.add(detailView, "POST_DETAIL"); // Usamos "POST_DETAIL" como clave para el CardLayout
+
+            cl.show(mainPanel, "POST_DETAIL");
+            mainPanel.revalidate();
+            mainPanel.repaint();
         }
-    });
-    
-    return btnComment;
-}
+    }
+
+    private JPanel createDetailedPostPanel(Post post) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
+
+        JButton btnClose = new JButton("X");
+        btnClose.setFont(new Font("SansSerif", Font.BOLD, 16));
+        btnClose.setForeground(TEXT_COLOR);
+        btnClose.setBackground(BG_COLOR);
+        btnClose.setBorder(new EmptyBorder(5, 10, 5, 10));
+        btnClose.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JPanel closePanel = new JPanel(new BorderLayout());
+        closePanel.setBackground(BG_COLOR);
+        closePanel.add(btnClose, BorderLayout.EAST);
+
+        btnClose.addActionListener(e -> {
+            CardLayout cl = (CardLayout) mainPanel.getLayout();
+            cl.show(mainPanel, "PROFILE_SEARCH");
+        });
+
+        JPanel contentWrapper = new JPanel(new GridBagLayout());
+        contentWrapper.setBackground(POST_BG);
+        contentWrapper.setBorder(new LineBorder(BORDER_COLOR, 1));
+        contentWrapper.setPreferredSize(new Dimension(800, 500));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        int imgSize = 500;
+
+        JLabel lblImage = new JLabel();
+        ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imgSize);
+
+        if (postIcon != null) {
+            lblImage.setIcon(postIcon);
+        } else {
+            lblImage.setText("Imagen no disponible");
+            lblImage.setForeground(Color.RED);
+        }
+        lblImage.setPreferredSize(new Dimension(imgSize, imgSize));
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.4;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        contentWrapper.add(lblImage, gbc);
+
+        JPanel sidePanel = createCommentsSidePanel(post);
+        sidePanel.setPreferredSize(new Dimension(300, imgSize));
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.6;
+        gbc.weighty = 1.0;
+        contentWrapper.add(sidePanel, gbc);
+
+        JButton likeButton = new JButton();
+
+        if (loggedUser != null && post.isLikedBy(loggedUser.getUsername())) {
+            likeButton.setText("❤️");
+            likeButton.setForeground(Color.RED);
+        } else {
+            likeButton.setText("❤");
+            likeButton.setForeground(Color.GRAY);
+        }
+
+        likeButton.addActionListener(e -> handleLikeAction(post, likeButton));
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(POST_BG);
+        bottomPanel.add(likeButton);
+
+        panel.add(closePanel, BorderLayout.NORTH);
+        panel.add(contentWrapper, BorderLayout.CENTER);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createCommentsSidePanel(Post post) {
+        JPanel sidePanel = new JPanel(new BorderLayout());
+        sidePanel.setBackground(POST_BG);
+
+        // --- A. CABECERA (AUTOR DEL POST) ---
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(POST_BG);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
+
+        // Etiqueta del autor (Clicable)
+        JButton btnAuthor = new JButton("@" + post.getAuthorUsername());
+        btnAuthor.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnAuthor.setForeground(TEXT_COLOR);
+        btnAuthor.setBackground(POST_BG);
+        btnAuthor.setBorderPainted(false);
+        btnAuthor.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btnAuthor.addActionListener(e -> {
+            User author = userManager.getUserByUsername(post.getAuthorUsername());
+            if (author != null) {
+                // Regresar al panel de búsqueda/perfiles
+                CardLayout cl = (CardLayout) mainPanel.getLayout();
+                cl.show(mainPanel, "PROFILE_SEARCH");
+
+                // Mostrar el perfil del autor en el sub-CardLayout
+                mostrarPerfil(author);
+            }
+        });
+
+        header.add(btnAuthor, BorderLayout.WEST);
+        sidePanel.add(header, BorderLayout.NORTH);
+
+        // --- B. ÁREA DE COMENTARIOS Y CAPTION (CENTRO) ---
+        // Usamos BoxLayout para la descripción y los comentarios
+        JPanel commentsAndCaptionPanel = new JPanel();
+        commentsAndCaptionPanel.setLayout(new BoxLayout(commentsAndCaptionPanel, BoxLayout.Y_AXIS));
+        commentsAndCaptionPanel.setBackground(POST_BG);
+        commentsAndCaptionPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // 1. Descripción (Caption) del Post
+        JLabel lblCaption = new JLabel("<html><b>" + post.getAuthorUsername() + "</b>: " + post.getCaption() + "</html>");
+        lblCaption.setForeground(TEXT_COLOR);
+        lblCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
+        commentsAndCaptionPanel.add(lblCaption);
+        commentsAndCaptionPanel.add(Box.createVerticalStrut(10));
+
+        // 2. Comentarios
+        for (Comment comment : post.getComments()) {
+            commentsAndCaptionPanel.add(createClickableComment(post, comment));
+            commentsAndCaptionPanel.add(Box.createVerticalStrut(5));
+        }
+
+        JScrollPane commentsScrollPane = new JScrollPane(commentsAndCaptionPanel);
+        commentsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        commentsScrollPane.setBorder(null);
+        sidePanel.add(commentsScrollPane, BorderLayout.CENTER);
+
+        // --- C. BOTONES DE ACCIÓN Y AÑADIR COMENTARIO (SUR) ---
+        JPanel actionAndInputPanel = new JPanel(new BorderLayout());
+        actionAndInputPanel.setBackground(POST_BG);
+
+        // 1. Panel de Likes (Actualización en tiempo real)
+        JPanel likePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        likePanel.setBackground(POST_BG);
+
+        JButton btnLike = createLikeButton(post);
+        JLabel lblLikesCount = new JLabel(post.getLikesCount() + " Me gusta");
+        lblLikesCount.setForeground(TEXT_COLOR);
+        lblLikesCount.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+        // Lógica para el Like (Actualización inmediata)
+        btnLike.addActionListener(e -> {
+            // Usa tu método existente, pero actualiza solo las etiquetas locales
+            handleLikeAction(post, btnLike); // Esto guarda la persistencia y actualiza el botón de forma visual
+            lblLikesCount.setText(post.getLikesCount() + " Me gusta");
+        });
+
+        likePanel.add(btnLike);
+        likePanel.add(lblLikesCount);
+        actionAndInputPanel.add(likePanel, BorderLayout.NORTH);
+
+        // 2. Input para Añadir Comentario
+        actionAndInputPanel.add(createCommentInputPanel(post), BorderLayout.CENTER);
+
+        sidePanel.add(actionAndInputPanel, BorderLayout.SOUTH);
+
+        return sidePanel;
+    }
+
+    // --- NUEVO MÉTODO: Crea el input para agregar un comentario ---
+    private JPanel createCommentInputPanel(Post post) {
+        JPanel addCommentPanel = new JPanel(new BorderLayout(5, 5));
+        addCommentPanel.setBackground(POST_BG);
+        addCommentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // Campo de texto para el comentario (usando tu método de estilo existente)
+        JTextField txtComment = styledTextField("Añadir un comentario...");
+
+        // Botón de Enviar (usando tu método de estilo existente)
+        JButton btnPostComment = styledButton("Enviar");
+        btnPostComment.setPreferredSize(new Dimension(80, 35));
+        btnPostComment.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        // Lógica al hacer clic en ENVIAR
+        btnPostComment.addActionListener(e -> {
+            String commentText = txtComment.getText().trim();
+            if (loggedUser == null) {
+                JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!commentText.isEmpty()) {
+                User author = userManager.getUserByUsername(post.getAuthorUsername());
+
+                // 1. Crear y añadir el nuevo comentario
+                Comment newComment = new Comment(loggedUser.getUsername(), commentText);
+                post.addComment(newComment);
+
+                // 2. Guardar la persistencia
+                userManager.saveUser(author);
+
+                // 3. Limpiar el campo de texto
+                txtComment.setText("");
+
+                // 4. Recargar la vista de detalle para mostrar el nuevo comentario
+                showPostDetail(post);
+            }
+        });
+
+        addCommentPanel.add(txtComment, BorderLayout.CENTER);
+        addCommentPanel.add(btnPostComment, BorderLayout.EAST);
+
+        return addCommentPanel;
+    }
+
+    private JButton createClickableComment(Post post, Comment comment) {
+        // Usamos JButton para que sea fácilmente clicable y se vea como link
+        JButton btnComment = new JButton();
+        btnComment.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        btnComment.setBackground(POST_BG);
+        btnComment.setBorderPainted(false);
+        btnComment.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Texto del comentario formateado (Username en negrita, texto normal)
+        JLabel lblUsername = new JLabel("<html><b>" + comment.getUsername() + "</b>: " + comment.getText() + "</html>");
+        lblUsername.setForeground(TEXT_COLOR);
+        lblUsername.setFont(new Font("SansSerif", Font.PLAIN, 12));
+
+        btnComment.add(lblUsername);
+
+        btnComment.addActionListener(e -> {
+            User commenter = userManager.getUserByUsername(comment.getUsername());
+            if (commenter != null) {
+                // Al hacer clic en el comentario, volvemos a la vista de perfil y mostramos al comentarista
+                CardLayout cl = (CardLayout) mainPanel.getLayout();
+                cl.show(mainPanel, "PROFILE_SEARCH");
+                mostrarPerfil(commenter); // Muestra el perfil del comentarista
+            }
+        });
+
+        return btnComment;
+    }
 
     // --- PANEL DE BÚSQUEDA Y VISUALIZACIÓN DE PERFIL (EXISTENTE) ---
     private JPanel crearPanelProfileSearch() {
@@ -1256,6 +1285,7 @@ private JButton createClickableComment(Post post, Comment comment) {
 
         return searchPanel;
     }
+
     private void mostrarPerfil(User targetUser) {
         // Eliminar vistas anteriores y añadir la nueva
 
@@ -1270,47 +1300,46 @@ private JButton createClickableComment(Post post, Comment comment) {
         profileCardContainer.add(profileView, "PROFILE_VIEW");
 
         for (Component comp : profileCardContainer.getComponents()) {
-        // Asumiendo que SÓLO la vista del perfil tiene un nombre específico
-        if (comp.getName() != null && comp.getName().equals("PROFILE_VIEW_CONTENT")) {
-            profileCardContainer.remove(comp);
-            break; 
+            // Asumiendo que SÓLO la vista del perfil tiene un nombre específico
+            if (comp.getName() != null && comp.getName().equals("PROFILE_VIEW_CONTENT")) {
+                profileCardContainer.remove(comp);
+                break;
             }
         }
-    
-    // 3. Añadir la nueva vista (y le damos un nombre específico)
-        profileView.setName("PROFILE_VIEW_CONTENT"); 
+
+        // 3. Añadir la nueva vista (y le damos un nombre específico)
+        profileView.setName("PROFILE_VIEW_CONTENT");
         profileCardContainer.add(profileView, "PROFILE_VIEW"); // La etiqueta del CardLayout sigue siendo "PROFILE_VIEW"
 
         // 4. Mostrar y actualizar
         CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
-        cl.show(profileCardContainer, "PROFILE_VIEW"); 
+        cl.show(profileCardContainer, "PROFILE_VIEW");
 
         profileCardContainer.revalidate();
         profileCardContainer.repaint();
-        }
-    
-    private ImageIcon cargarImagenCuadrada(String ruta, int tam) {
-    try {
-        BufferedImage original = ImageIO.read(new File(ruta));
-
-        // Crear imagen cuadrada recortando el centro
-        int size = Math.min(original.getWidth(), original.getHeight());
-        int x = (original.getWidth() - size) / 2;
-        int y = (original.getHeight() - size) / 2;
-
-        BufferedImage cuadrada = original.getSubimage(x, y, size, size);
-
-        // Escalar al tamaño deseado
-        Image esc = cuadrada.getScaledInstance(tam, tam, Image.SCALE_SMOOTH);
-
-        return new ImageIcon(esc);
-
-    } catch (Exception e) {
-        System.out.println("ERROR cargando imagen: " + e.getMessage());
-        return null;
     }
-}
 
+    private ImageIcon cargarImagenCuadrada(String ruta, int tam) {
+        try {
+            BufferedImage original = ImageIO.read(new File(ruta));
+
+            // Crear imagen cuadrada recortando el centro
+            int size = Math.min(original.getWidth(), original.getHeight());
+            int x = (original.getWidth() - size) / 2;
+            int y = (original.getHeight() - size) / 2;
+
+            BufferedImage cuadrada = original.getSubimage(x, y, size, size);
+
+            // Escalar al tamaño deseado
+            Image esc = cuadrada.getScaledInstance(tam, tam, Image.SCALE_SMOOTH);
+
+            return new ImageIcon(esc);
+
+        } catch (Exception e) {
+            System.out.println("ERROR cargando imagen: " + e.getMessage());
+            return null;
+        }
+    }
 
     /**
      * Construye la vista completa de un perfil (similar al diseño de
@@ -1340,7 +1369,7 @@ private JButton createClickableComment(Post post, Comment comment) {
         lblPhoto.setBorder(BorderFactory.createLineBorder(new Color(255, 105, 39), 3));
 
         // Cargar imagen cuadrada escalada al tamaño interior del JLabel
-        ImageIcon icon = cargarImagenCuadrada(targetUser.getFotoPath(), photoSize - 6); 
+        ImageIcon icon = cargarImagenCuadrada(targetUser.getFotoPath(), photoSize - 6);
         // 6 = grosor del borde para que no corte la imagen
         if (icon != null) {
             lblPhoto.setIcon(icon);
@@ -1364,9 +1393,6 @@ private JButton createClickableComment(Post post, Comment comment) {
         tabs.setFont(new Font("SansSerif", Font.BOLD, 14));
         tabs.setBorder(new LineBorder(BORDER_COLOR, 1));
         tabs.setOpaque(true);
-
-
-
 
         // 1.2. Info General (Centro)
         JPanel infoPanel = new JPanel();
@@ -1407,77 +1433,75 @@ private JButton createClickableComment(Post post, Comment comment) {
         infoPanel.add(createDetailLabel("Edad: " + targetUser.getEdad()));
         infoPanel.add(createDetailLabel("Miembro desde: " + targetUser.getJoinDate()));
 
+        // 1.3. Botones de Acción (Derecha)
+        JPanel actionPanel = new JPanel();
+        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
+        actionPanel.setBackground(BG_COLOR);
+        actionPanel.setAlignmentY(Component.TOP_ALIGNMENT);
 
-    // 1.3. Botones de Acción (Derecha)
-    JPanel actionPanel = new JPanel();
-    actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
-    actionPanel.setBackground(BG_COLOR);
-    actionPanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        // Lógica para mostrar botones solo si no es mi propio perfil
+        if (loggedUser != null && !targetUser.getUsername().equals(loggedUser.getUsername())) {
+            boolean isFollowing = loggedUser.isFollowing(targetUser.getUsername());
 
-    // Lógica para mostrar botones solo si no es mi propio perfil
-    if (loggedUser != null && !targetUser.getUsername().equals(loggedUser.getUsername())) {
-        boolean isFollowing = loggedUser.isFollowing(targetUser.getUsername());
+            // Botón principal (SEGUIR / DEJAR DE SEGUIR)
+            JButton btnAction = styledButton(isFollowing ? "DEJAR DE SEGUIR" : "SEGUIR");
+            btnAction.setPreferredSize(new Dimension(200, 35));
+            btnAction.setMaximumSize(new Dimension(200, 35));
+            btnAction.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Botón principal (SEGUIR / DEJAR DE SEGUIR)
-        JButton btnAction = styledButton(isFollowing ? "DEJAR DE SEGUIR" : "SEGUIR");
-        btnAction.setPreferredSize(new Dimension(200, 35));
-        btnAction.setMaximumSize(new Dimension(200, 35));
-        btnAction.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Estilos visuales según estado
-        if (isFollowing) {
-            btnAction.setBackground(new Color(54, 54, 54)); // Gris si ya lo sigo
-            btnAction.setForeground(TEXT_COLOR);
-        } else {
-            btnAction.setBackground(BTN_BLUE); // Azul si no lo sigo
-        }
-
-        btnAction.addActionListener(e -> {
+            // Estilos visuales según estado
             if (isFollowing) {
-                // Opción DEJAR DE SEGUIR con Confirmación
-                int respuesta = JOptionPane.showConfirmDialog(this, 
-                        "¿Estás seguro que quieres dejar de seguir a " + targetUser.getUsername() + "?",
-                        "Confirmar",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE);
+                btnAction.setBackground(new Color(54, 54, 54)); // Gris si ya lo sigo
+                btnAction.setForeground(TEXT_COLOR);
+            } else {
+                btnAction.setBackground(BTN_BLUE); // Azul si no lo sigo
+            }
 
-                if (respuesta == JOptionPane.YES_OPTION) {
+            btnAction.addActionListener(e -> {
+                if (isFollowing) {
+                    // Opción DEJAR DE SEGUIR con Confirmación
+                    int respuesta = JOptionPane.showConfirmDialog(this,
+                            "¿Estás seguro que quieres dejar de seguir a " + targetUser.getUsername() + "?",
+                            "Confirmar",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE);
+
+                    if (respuesta == JOptionPane.YES_OPTION) {
+                        userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
+                        // Recargar usuario local y actualizar vista
+                        loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
+                        mostrarPerfil(targetUser);
+                        rebuildMainFeed();
+                    }
+                } else {
+                    // Opción SEGUIR (Directo)
                     userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
                     // Recargar usuario local y actualizar vista
                     loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
-                    mostrarPerfil(targetUser); 
-                    rebuildMainFeed();
+                    mostrarPerfil(targetUser);
                 }
-            } else {
-                // Opción SEGUIR (Directo)
-                userManager.toggleFollow(loggedUser.getUsername(), targetUser.getUsername());
-                // Recargar usuario local y actualizar vista
-                loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
-                mostrarPerfil(targetUser);
-            }
-        });
+            });
 
-        actionPanel.add(btnAction);
-        actionPanel.add(Box.createVerticalStrut(10));
+            actionPanel.add(btnAction);
+            actionPanel.add(Box.createVerticalStrut(10));
 
-    } else if (loggedUser != null && targetUser.getUsername().equals(loggedUser.getUsername())) {
-        JLabel lblOwn = new JLabel("(Tu Perfil)");
-        lblOwn.setForeground(Color.GRAY);
-        actionPanel.add(lblOwn);
-    }
+        } else if (loggedUser != null && targetUser.getUsername().equals(loggedUser.getUsername())) {
+            JLabel lblOwn = new JLabel("(Tu Perfil)");
+            lblOwn.setForeground(Color.GRAY);
+            actionPanel.add(lblOwn);
+        }
 
-    // Botón "VER SUS TWEETS" (Decorativo, ya que abajo se muestran)
-    // Aunque el grid ya los muestra, agregamos el texto visual para cumplir con el requisito
-    JLabel lblVerTweets = new JLabel("⬇ VER SUS TWEETS ⬇");
-    lblVerTweets.setFont(new Font("SansSerif", Font.BOLD, 12));
-    lblVerTweets.setForeground(Color.GRAY);
-    lblVerTweets.setAlignmentX(Component.LEFT_ALIGNMENT);
-    lblVerTweets.setBorder(new EmptyBorder(15, 0, 0, 0));
-    
-    actionPanel.add(lblVerTweets);
-    
-    // ... (El resto del código donde se agrega headerPanel al profilePanel sigue igual) ...
+        // Botón "VER SUS TWEETS" (Decorativo, ya que abajo se muestran)
+        // Aunque el grid ya los muestra, agregamos el texto visual para cumplir con el requisito
+        JLabel lblVerTweets = new JLabel("⬇ VER SUS TWEETS ⬇");
+        lblVerTweets.setFont(new Font("SansSerif", Font.BOLD, 12));
+        lblVerTweets.setForeground(Color.GRAY);
+        lblVerTweets.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblVerTweets.setBorder(new EmptyBorder(15, 0, 0, 0));
 
+        actionPanel.add(lblVerTweets);
+
+        // ... (El resto del código donde se agrega headerPanel al profilePanel sigue igual) ...
         // Ensamblar Header
         headerPanel.add(lblPhoto, BorderLayout.WEST);
         headerPanel.add(infoPanel, BorderLayout.CENTER);
@@ -1491,97 +1515,94 @@ private JButton createClickableComment(Post post, Comment comment) {
 
         // 2.1. Tab Bar Simulation 
         JPanel tabBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
-tabBar.setBackground(BG_COLOR);
+        tabBar.setBackground(BG_COLOR);
 // Simular el borde inferior del Tab activo
-tabBar.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, BORDER_COLOR)); 
-tabBar.setPreferredSize(new Dimension(profilePanel.getWidth(), 50));
+        tabBar.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, BORDER_COLOR));
+        tabBar.setPreferredSize(new Dimension(profilePanel.getWidth(), 50));
 
 // Creamos un JLabel para simular el ícono de Grid (Activo)
-JLabel lblGridIcon = new JLabel("◼️ POSTS");
-lblGridIcon.setFont(new Font("SansSerif", Font.BOLD, 14));
-lblGridIcon.setForeground(TEXT_COLOR);
-tabBar.add(lblGridIcon);
+        JLabel lblGridIcon = new JLabel("◼️ POSTS");
+        lblGridIcon.setFont(new Font("SansSerif", Font.BOLD, 14));
+        lblGridIcon.setForeground(TEXT_COLOR);
+        tabBar.add(lblGridIcon);
 
-contentPanel.add(tabBar, BorderLayout.NORTH);
+        contentPanel.add(tabBar, BorderLayout.NORTH);
 
 // 2.2. Posts Grid con Scroll (USANDO EL MÉTODO CORREGIDO)
-JPanel postsGrid = crearPostsGrid(targetUser); 
+        JPanel postsGrid = crearPostsGrid(targetUser);
 
 // Si el postsGrid es el wrapper de "No hay posts" (que ya incluye el centrado), lo agregamos directo.
-if (targetUser.getPosts().isEmpty()) {
-    contentPanel.add(postsGrid, BorderLayout.CENTER);
-} else {
-    // Si hay posts, envolvemos el grid en un JScrollPane para el desplazamiento
-    JScrollPane scrollPane = new JScrollPane(postsGrid);
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-    scrollPane.setBorder(null);
-    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+        if (targetUser.getPosts().isEmpty()) {
+            contentPanel.add(postsGrid, BorderLayout.CENTER);
+        } else {
+            // Si hay posts, envolvemos el grid en un JScrollPane para el desplazamiento
+            JScrollPane scrollPane = new JScrollPane(postsGrid);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setBorder(null);
+            scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-    contentPanel.add(scrollPane, BorderLayout.CENTER);
-}
+            contentPanel.add(scrollPane, BorderLayout.CENTER);
+        }
 
-profilePanel.add(contentPanel, BorderLayout.CENTER);
-return profilePanel;
+        profilePanel.add(contentPanel, BorderLayout.CENTER);
+        return profilePanel;
     }
-    
+
     // --- En tu Clase Principal (Insta.InstagramProject) ---
-
 // --- Método de Recarga en tu Clase Principal ---
 // --- Método de Recarga en tu Clase Principal ---
+    public void rebuildMainFeed() {
 
-public void rebuildMainFeed() {
-    
-    // 1. Buscar el JScrollPane dentro del mainPanel (CardLayout)
-    JScrollPane scrollPane = (JScrollPane) getComponentByName(mainPanel, "FEED_SCROLL_PANE");
-    
-    if (scrollPane == null) {
-        System.err.println("Error: El JScrollPane del feed ('FEED_SCROLL_PANE') no fue encontrado en mainPanel.");
-        // Si no lo encuentra, forzamos a mostrar la tarjeta para asegurar
+        // 1. Buscar el JScrollPane dentro del mainPanel (CardLayout)
+        JScrollPane scrollPane = (JScrollPane) getComponentByName(mainPanel, "FEED_SCROLL_PANE");
+
+        if (scrollPane == null) {
+            System.err.println("Error: El JScrollPane del feed ('FEED_SCROLL_PANE') no fue encontrado en mainPanel.");
+            // Si no lo encuentra, forzamos a mostrar la tarjeta para asegurar
+            CardLayout cl = (CardLayout) mainPanel.getLayout();
+            cl.show(mainPanel, "MAIN");
+            return;
+        }
+
+        // 2. Obtener la referencia al JPanel interno que contiene los posts
+        // Este panel se obtiene de la Viewport del JScrollPane
+        JPanel feedContentPanel = (JPanel) getComponentByName(scrollPane.getViewport(), "FEED_POSTS_INNER_PANEL");
+
+        if (feedContentPanel == null) {
+            System.err.println("Error: El JPanel interno del feed no fue encontrado.");
+            return;
+        }
+
+        // 3. Ejecutar la lógica de recarga de posts con la referencia correcta
+        int feedWidth = 550;
+        loadFeedPosts(feedContentPanel, feedWidth);
+
+        // 4. Mostrar la vista principal y forzar el repintado
         CardLayout cl = (CardLayout) mainPanel.getLayout();
-        cl.show(mainPanel, "MAIN"); 
-        return;
+        cl.show(mainPanel, "MAIN");
+
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
-    
-    // 2. Obtener la referencia al JPanel interno que contiene los posts
-    // Este panel se obtiene de la Viewport del JScrollPane
-    JPanel feedContentPanel = (JPanel) getComponentByName(scrollPane.getViewport(), "FEED_POSTS_INNER_PANEL");
-    
-    if (feedContentPanel == null) {
-        System.err.println("Error: El JPanel interno del feed no fue encontrado.");
-        return;
-    }
-
-    // 3. Ejecutar la lógica de recarga de posts con la referencia correcta
-    int feedWidth = 550; 
-    loadFeedPosts(feedContentPanel, feedWidth); 
-    
-    // 4. Mostrar la vista principal y forzar el repintado
-    CardLayout cl = (CardLayout) mainPanel.getLayout();
-    cl.show(mainPanel, "MAIN"); 
-
-    mainPanel.revalidate();
-    mainPanel.repaint();
-}
-
 
 // --- Asegúrate de tener este método auxiliar ---
 // Ya lo usamos en la corrección anterior, pero es clave para esta solución.
-private Component getComponentByName(Container container, String name) {
-    for (Component comp : container.getComponents()) {
-        if (name.equals(comp.getName())) {
-            return comp;
-        }
-        // Buscar recursivamente si el componente es un contenedor (ej. Viewport)
-        if (comp instanceof Container) {
-            Component found = getComponentByName((Container) comp, name);
-            if (found != null) {
-                return found;
+    private Component getComponentByName(Container container, String name) {
+        for (Component comp : container.getComponents()) {
+            if (name.equals(comp.getName())) {
+                return comp;
+            }
+            // Buscar recursivamente si el componente es un contenedor (ej. Viewport)
+            if (comp instanceof Container) {
+                Component found = getComponentByName((Container) comp, name);
+                if (found != null) {
+                    return found;
+                }
             }
         }
+        return null;
     }
-    return null;
-}
 
     // Crea una miniatura de post (cuadrado) para la cuadrícula del perfil
     private JPanel crearPostMiniatura(Post post) {
@@ -1596,7 +1617,7 @@ private Component getComponentByName(Container container, String name) {
         JLabel lblImage = new JLabel();
         lblImage.setHorizontalAlignment(SwingConstants.CENTER);
         lblImage.setVerticalAlignment(SwingConstants.CENTER);
-        
+
         // Cargar imagen cuadrada escalada
         ImageIcon icon = cargarImagenCuadrada(post.getImagePath(), MINI_SIZE);
 
@@ -1614,18 +1635,17 @@ private Component getComponentByName(Container container, String name) {
         // Opcional: Agregar un efecto visual al pasar el mouse (Overlay)
         // Puedes agregar aquí un MouseListener para mostrar detalles del post (likes, comentarios)
         // al pasar el mouse, simulando el comportamiento de Instagram.
-        
         // Ejemplo de funcionalidad (Click para ver el post completo, si existiera esa vista)
         miniatura.addMouseListener(new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-         JOptionPane.showMessageDialog(miniatura, 
-            "Post de " + post.getUsername() + "\nDescripción: " + post.getCaption(), 
-            "Ver Post", 
-            JOptionPane.INFORMATION_MESSAGE);
-    }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                JOptionPane.showMessageDialog(miniatura,
+                        "Post de " + post.getUsername() + "\nDescripción: " + post.getCaption(),
+                        "Ver Post",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
         });
-        
+
         return miniatura;
     }
 
@@ -1686,31 +1706,29 @@ private Component getComponentByName(Container container, String name) {
                     cardLayout.show(mainPanel, "LOGIN");
                 }
             } else if (cardName.equals("MY_PROFILE")) {
-            if (loggedUser != null) {
+                if (loggedUser != null) {
+                    // 1. Navega al panel de búsqueda principal
+                    cardLayout.show(mainPanel, "PROFILE_SEARCH");
+
+                    // 2. Ejecuta la lógica para mostrar el perfil del usuario logueado
+                    // Es esencial que mostrarPerfil maneje correctamente el CardLayout interno
+                    mostrarPerfil(loggedUser);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } // LÓGICA PARA BÚSQUEDA (Te lleva al PROFILE_SEARCH y te muestra el input del buscador)
+            // LÓGICA PARA BÚSQUEDA (CardName: PROFILE_SEARCH)
+            else if (cardName.equals("PROFILE_SEARCH")) {
                 // 1. Navega al panel de búsqueda principal
-                cardLayout.show(mainPanel, "PROFILE_SEARCH"); 
+                cardLayout.show(mainPanel, "PROFILE_SEARCH");
 
-                // 2. Ejecuta la lógica para mostrar el perfil del usuario logueado
-                // Es esencial que mostrarPerfil maneje correctamente el CardLayout interno
-                mostrarPerfil(loggedUser); 
+                // 2. RESETA la vista interna al panel de input
+                CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
+                cl.show(profileCardContainer, "SEARCH_INPUT");
+
+                profileCardContainer.revalidate();
+                profileCardContainer.repaint();
             } else {
-                JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-        
-        // LÓGICA PARA BÚSQUEDA (Te lleva al PROFILE_SEARCH y te muestra el input del buscador)
-        // LÓGICA PARA BÚSQUEDA (CardName: PROFILE_SEARCH)
-        else if (cardName.equals("PROFILE_SEARCH")) {
-            // 1. Navega al panel de búsqueda principal
-            cardLayout.show(mainPanel, "PROFILE_SEARCH");
-
-            // 2. RESETA la vista interna al panel de input
-            CardLayout cl = (CardLayout) (profileCardContainer.getLayout());
-            cl.show(profileCardContainer, "SEARCH_INPUT");
-
-            profileCardContainer.revalidate();
-            profileCardContainer.repaint();
-        } else {
                 // Navegación normal (MAIN, CREATE_POST)
                 cardLayout.show(mainPanel, cardName);
             }
@@ -1738,7 +1756,6 @@ private Component getComponentByName(Container container, String name) {
         lbl.setBorder(new EmptyBorder(2, 0, 2, 0));
         return lbl;
     }
-    
 
     // Helper para crear etiquetas de estadísticas de perfil (EXISTENTE)
     private JPanel createStatPanel(String count, String label) {

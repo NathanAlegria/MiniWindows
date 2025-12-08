@@ -11,45 +11,25 @@ package Insta;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Comparator;
-import java.util.UUID;
 
 
 public class Post implements Serializable {
+
     private static final long serialVersionUID = 1L;
     private String id;
-    private String imagePath;
+    private String imageName; // solo el nombre del archivo
     private String caption;
-    
-    // NOTA: Este 'username' representa al AUTOR del post.
-    private String username; 
-    
+    private String username;
     private LocalDateTime date;
-    private Set<String> likedBy; // Almacena los usernames de quienes dieron like
-    private List<Comment> comments; // Almacena la lista de comentarios
+    private Set<String> likedBy;
+    private List<Comment> comments;
 
-    /**
-     * Constructor del Post.
-     * @param username El username del autor del post.
-     * @param imagePath La ruta de la imagen.
-     * @param caption El texto de la descripción.
-     */
-    public Post(String username, String imagePath, String caption) {
-        this.id=UUID.randomUUID().toString();
+    public Post(String username, String imageName, String caption) {
+        this.id = UUID.randomUUID().toString();
         this.username = username;
-        this.imagePath = imagePath;
+        this.imageName = imageName; // nombre del archivo guardado en la raíz
         this.caption = caption;
         this.date = LocalDateTime.now();
         this.likedBy = new HashSet<>();
@@ -57,46 +37,32 @@ public class Post implements Serializable {
     }
 
     public String getId() {
-        if (this.id == null) {
-            this.id = UUID.randomUUID().toString(); 
-        }
         return id;
     }
-    // --- Getters del autor y contenido (Compatibles con tu código original) ---
-    
-    // Renombramos el getter para mayor claridad, aunque el campo se llame 'username'
+
     public String getAuthorUsername() {
         return username;
     }
-    // Dejamos el getter original por si es necesario para compatibilidad directa
+
     public String getUsername() {
-        return username; 
+        return username;
     }
 
-    public String getImagePath() {
-        return imagePath;
+    public String getImageName() {
+        return imageName;
     }
 
     public String getCaption() {
         return caption;
     }
 
-    // --- Nuevos Getters y Lógica (Likes y Comentarios) ---
-
     public LocalDateTime getDate() {
         return date;
-    }
-    
-    public String getFormattedDate() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return date.format(formatter);
     }
 
     public List<Comment> getComments() {
         return comments;
     }
-    
-    // --- Lógica de Likes ---
 
     public int getLikesCount() {
         return likedBy.size();
@@ -113,10 +79,17 @@ public class Post implements Serializable {
     public void unlike(String user) {
         likedBy.remove(user);
     }
-    
-    // --- Lógica de Comentarios ---
-    
+
     public void addComment(Comment comment) {
         comments.add(comment);
+    }
+
+    public String getImagePath() {
+        return FileManager.getImagePath(imageName);
+    }
+
+    public String getFormattedDate() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return date.format(formatter);
     }
 }
