@@ -31,6 +31,7 @@ class User implements Serializable {
     private int edad;
     private String fotoPath;
     private LocalDate joinDate;
+    private boolean isActive;
     private List<Post> posts;
     private List<String> followers;
     private List<String> followings;
@@ -43,50 +44,29 @@ class User implements Serializable {
         this.edad = edad;
         this.fotoPath = fotoPath;
         this.joinDate = LocalDate.now();
+        this.isActive = true;
         this.posts = new ArrayList<>();
         this.followers = new ArrayList<>();
         this.followings = new ArrayList<>();
     }
 
     // Getters y Setters
-    public String getNombre() {
-        return nombre;
+    public String getNombre() { return nombre; }
+    public char getGenero() { return genero; }
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
+    public int getEdad() { return edad; }
+    public String getFotoPath() { return fotoPath; }
+    public LocalDate getJoinDate() { return joinDate; }
+    public List<Post> getPosts() { return posts; }
+    public List<String> getFollowers() { return followers; }
+    public List<String> getFollowings() { return followings; }
+    public boolean isActive() {
+        return isActive;
     }
 
-    public char getGenero() {
-        return genero;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public int getEdad() {
-        return edad;
-    }
-
-    public String getFotoPath() {
-        return fotoPath;
-    }
-
-    public LocalDate getJoinDate() {
-        return joinDate;
-    }
-
-    public List<Post> getPosts() {
-        return posts;
-    }
-
-    public List<String> getFollowers() {
-        return followers;
-    }
-
-    public List<String> getFollowings() {
-        return followings;
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
     }
 
     // Métodos de acción
