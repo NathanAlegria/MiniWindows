@@ -124,13 +124,23 @@ public class UserManager {
         saveUsers();
     }
     
-    public User getUserByUsername(String username) {
-        return users.stream()
-            .filter(u -> u.getUsername().equalsIgnoreCase(username))
-            .findFirst()
-            .orElse(null);
-    }
-    
+    // --- MODIFICACIÓN EN UserManager.java ---
+
+// ... (código existente) ...
+
+public User getUserByUsername(String username) {
+    // 1. FORZAR LA RECARGA DE TODA LA LISTA DE USUARIOS DESDE EL ARCHIVO
+    // Esto asegura que la lista 'this.users' tenga la última versión del disco.
+    this.users = loadUsers(); 
+
+    // 2. Buscar el usuario en la lista recién cargada
+    return this.users.stream()
+        .filter(u -> u.getUsername().equalsIgnoreCase(username))
+        .findFirst()
+        .orElse(null);
+}
+
+// ... (código existente) ...
     /**
      * Alterna el estado de seguimiento entre dos usuarios.
      * @param followerUsername El usuario que sigue/deja de seguir (el logueado).
@@ -138,35 +148,42 @@ public class UserManager {
      */
     
     // Dentro de la clase UserManager
+// --- MODIFICACIÓN EN UserManager.java -> getAllRelevantPostsByDate ---
+
 public List<Post> getAllRelevantPostsByDate(User loggedUser) {
     if (loggedUser == null) {
         return Collections.emptyList();
     }
+    
+    // ** PASO CLAVE 1: Obtener la versión más reciente del usuario logueado **
+    // Usamos getUserByUsername, que ya modificamos para recargar la lista global, 
+    // asegurando que tenemos la lista de seguidos actualizada.
+    User currentUser = getUserByUsername(loggedUser.getUsername()); 
+    if (currentUser == null) return Collections.emptyList();
 
     List<Post> allPosts = new ArrayList<>();
 
     // 1. Agregar los posts propios
-    allPosts.addAll(loggedUser.getPosts());
+    allPosts.addAll(currentUser.getPosts()); // Usar currentUser
 
     // 2. Agregar los posts de los usuarios seguidos
-    for (String followedUsername : loggedUser.getFollowings()) {
+    for (String followedUsername : currentUser.getFollowings()) { // Usar currentUser
         try {
-            // ** CORRECCIÓN CLAVE: Usar getUserByUsername **
-            // Esto busca el objeto User completo en la lista 'users' cargada en memoria.
+            // ** PASO CLAVE 2: Obtener el usuario seguido desde la lista cargada **
+            // getUserByUsername recarga la lista global, lo cual es útil.
             User followedUser = getUserByUsername(followedUsername); 
             
             if (followedUser != null) {
-                // Obtenemos los posts del usuario seguido que ya está cargado
                 allPosts.addAll(followedUser.getPosts());
             }
         } catch (Exception e) {
-            // El manejo de errores ahora es menos probable, pero lo mantenemos.
             System.err.println("Error al cargar posts de " + followedUsername + ": " + e.getMessage());
         }
     }
 
-    // 3. Ordenar la lista combinada (asumiendo que Post tiene el método getDate())
-    allPosts.sort(Comparator.comparing(Post::getDate).reversed());
+    // 3. Ordenar la lista combinada (Del más reciente al más antiguo)
+    // Asumiendo que Post tiene el método getDate()
+    allPosts.sort(Comparator.comparing(Post::getDate, Comparator.reverseOrder())); 
 
     return allPosts;
 }

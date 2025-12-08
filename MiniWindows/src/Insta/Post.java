@@ -24,10 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Comparator;
+import java.util.UUID;
+
 
 public class Post implements Serializable {
     private static final long serialVersionUID = 1L;
-
+    private String id;
     private String imagePath;
     private String caption;
     
@@ -45,6 +47,7 @@ public class Post implements Serializable {
      * @param caption El texto de la descripción.
      */
     public Post(String username, String imagePath, String caption) {
+        this.id=UUID.randomUUID().toString();
         this.username = username;
         this.imagePath = imagePath;
         this.caption = caption;
@@ -53,6 +56,12 @@ public class Post implements Serializable {
         this.comments = new ArrayList<>();
     }
 
+    public String getId() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID().toString(); 
+        }
+        return id;
+    }
     // --- Getters del autor y contenido (Compatibles con tu código original) ---
     
     // Renombramos el getter para mayor claridad, aunque el campo se llame 'username'
