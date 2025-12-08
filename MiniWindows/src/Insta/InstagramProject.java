@@ -751,45 +751,50 @@ public class InstagramProject extends JPanel {
         lblImageStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         btnSelectImage.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes JPG & PNG", "jpg", "png", "jpeg");
-            fileChooser.setFileFilter(filter);
+    JFileChooser fileChooser = new JFileChooser();
+    FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes JPG & PNG", "jpg", "png", "jpeg");
+    fileChooser.setFileFilter(filter);
 
-            int returnValue = fileChooser.showOpenDialog(null);
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = fileChooser.getSelectedFile();
+    int returnValue = fileChooser.showOpenDialog(null);
+    if (returnValue == JFileChooser.APPROVE_OPTION) {
+        File selectedFile = fileChooser.getSelectedFile();
+        
+        // 1. Validaciones
+        if (loggedUser == null) {
+            lblImageStatus.setText("Error: Usuario no logueado.");
+            lblImageStatus.setForeground(Color.RED);
+            return;
+        }
 
-                if (loggedUser == null) {
-                    lblImageStatus.setText("Error: Usuario no logueado.");
-                    lblImageStatus.setForeground(Color.RED);
-                    return;
-                }
+        try {
+            // 2. Crear nombre único y definir destino
+            String fileExtension = selectedFile.getName().substring(selectedFile.getName().lastIndexOf("."));
+            String uniqueFileName = "post_img_" + System.currentTimeMillis() + fileExtension;
+            
+            // Definir la ruta de destino en la raíz del proyecto (user.dir)
+            String projectRoot = new File("").getAbsolutePath();
+            File destFile = new File(projectRoot + File.separator + uniqueFileName);
+            
+            // 3. Copiar el archivo seleccionado a la raíz del proyecto
+            java.nio.file.Files.copy(
+                selectedFile.toPath(), 
+                destFile.toPath(), 
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            );
 
-                String fileExtension = selectedFile.getName().substring(selectedFile.getName().lastIndexOf("."));
-                String uniqueFileName = "post_img_" + System.currentTimeMillis() + fileExtension;
+            // 4. 🚨 CRÍTICO: Guardar SÓLO el nombre del archivo.
+            // Esto es lo que se guarda en el objeto Post y lo que lee cargarImagenCuadrada.
+            imagePath[0] = uniqueFileName;
+            lblImageStatus.setText("Archivo guardado: " + uniqueFileName);
+            lblImageStatus.setForeground(BTN_BLUE);
 
-                String projectRoot = new File("").getAbsolutePath();
-                File destFile = new File(projectRoot + File.separator + uniqueFileName);
-
-                try {
-                    java.nio.file.Files.copy(
-                            selectedFile.toPath(),
-                            destFile.toPath(),
-                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                    );
-
-                    // Guardar solo el nombre del archivo, ya está en la raíz
-                    imagePath[0] = uniqueFileName;
-                    lblImageStatus.setText("Archivo guardado: " + uniqueFileName);
-                    lblImageStatus.setForeground(BTN_BLUE);
-
-                } catch (Exception ex) {
-                    lblImageStatus.setText("Error al guardar imagen: " + ex.getMessage());
-                    lblImageStatus.setForeground(Color.RED);
-                    ex.printStackTrace();
-                }
-            }
-        });
+        } catch (Exception ex) {
+            lblImageStatus.setText("Error al guardar imagen: " + ex.getMessage());
+            lblImageStatus.setForeground(Color.RED);
+            ex.printStackTrace();
+        }
+    }
+});
 
         postForm.add(btnSelectImage);
         postForm.add(Box.createVerticalStrut(5));
@@ -1631,18 +1636,62 @@ public class InstagramProject extends JPanel {
 
     // --- Método de Utilidad: cargarImagenCuadrada (Añadir a InstagramProject) ---
 // Es vital para mostrar fotos de perfil y posts.
-    private ImageIcon cargarImagenCuadrada(String fileName, int size) {
-        File imgFile = new File(fileName);
-        if (!imgFile.exists()) {
-            imgFile = new File(System.getProperty("user.dir") + File.separator + fileName);
-        }
-        if (!imgFile.exists()) {
-            return new ImageIcon(new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB));
-        }
-        ImageIcon icon = new ImageIcon(imgFile.getAbsolutePath());
-        Image img = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
-        return new ImageIcon(img);
+    private ImageIcon cargarImagenCuadrada(String path, int size) {
+    File imgFile = new File(path);
+    boolean isAbsolutePath = imgFile.isAbsolute();
+
+    // 1. Manejo de rutas: Intentar adjuntar user.dir si es una ruta relativa.
+    // Dentro de cargarImagenCuadrada:
+// ...
+// Si el archivo NO existe Y NO es una ruta absoluta, intentamos añadir la raíz del proyecto (user.dir)
+if (!imgFile.exists() && !isAbsolutePath) {
+        imgFile = new File(System.getProperty("user.dir") + File.separator + path);
     }
+    
+    // 2. Fallback: Si la imagen principal (de post/perfil) aún no se encuentra.
+    if (!imgFile.exists()) {
+        
+        // ... (El resto del código del Fallback y la carga son correctos) ...
+        
+        System.err.println("❌ ERROR: Archivo no encontrado en la ruta: " + imgFile.getAbsolutePath());
+        
+        // Solución de Fallback: Intentar cargar el placeholder directamente desde la raíz del proyecto.
+        File placeholderFile = new File(System.getProperty("user.dir") + File.separator + "placeholder.png");
+
+        if (placeholderFile.exists()) {
+            imgFile = placeholderFile;
+        } else {
+             System.err.println("❌ ERROR: No se encontró el placeholder. (Verifique 'placeholder.png' en la raíz del proyecto)");
+             return new ImageIcon(new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB));
+        }
+    }
+
+    // 3. Lectura, escalado y corrección de color (ARGB)
+    try {
+        BufferedImage originalImage = ImageIO.read(imgFile);
+        
+        // Verificación crítica de lectura de imagen
+        if (originalImage == null) {
+            System.err.println("❌ ERROR: Lectura de imagen fallida o formato inválido para: " + imgFile.getAbsolutePath());
+            return new ImageIcon(new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB));
+        }
+        
+        // Escalar la imagen
+        Image scaledImage = originalImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+        
+        // Crear un nuevo buffer ARGB para la corrección de color
+        BufferedImage bufferedScaledImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = bufferedScaledImage.createGraphics();
+        g2d.drawImage(scaledImage, 0, 0, null);
+        g2d.dispose();
+        
+        return new ImageIcon(bufferedScaledImage);
+
+    } catch (IOException e) {
+        System.err.println("❌ Excepción al procesar la imagen: " + path + " - " + e.getMessage());
+        return new ImageIcon(new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB));
+    }
+}
 
     /**
      * Construye la vista completa de un perfil (similar al diseño de

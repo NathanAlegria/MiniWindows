@@ -227,24 +227,28 @@ public User getUserByUsername(String username) {
 
 private Post parsePostFromLine(String line) {
     try {
-        // Asumiendo formato: username#YYYYMMDD_HHmmss#caption
-        String[] parts = line.split("#", 3); 
-        if (parts.length < 3) return null;
+        // 🚨 CAMBIO CRÍTICO: Ahora el formato esperado es: username#YYYYMMDD_HHmmss#imagePath#caption
+        String[] parts = line.split("#", 4); // <--- Dividir por 4 partes
+        
+        if (parts.length < 4) { // <--- Esperamos 4 partes
+            System.err.println("Advertencia: Línea de post incompleta (4 partes esperadas): " + line);
+            return null;
+        }
 
         String author = parts[0];
-        String dateString = parts[1]; 
-        String caption = parts[2];
+        String dateString = parts[1];
+        String imagePath = parts[2]; // <--- NUEVO: Extraer la ruta de la imagen
+        String caption = parts[3];
         
         // 1. Parsear la fecha del archivo
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         LocalDateTime postDate = LocalDateTime.parse(dateString, formatter);
         
-        // 2. Crear el objeto Post (usando un placeholder para el nombre de imagen si no está en el .ins)
-        // Nota: Si el archivo insta.ins tuviera el imageName, usarías parts[2] para la imagen y parts[3] para el caption.
-        Post post = new Post(author, "placeholder.png", caption); 
+        // 2. Crear el objeto Post (usando AHORA la ruta de imagen real)
+        Post post = new Post(author, imagePath, caption); // <--- Usar imagePath real
         
-        // 3. 🚨 CORRECCIÓN CRÍTICA: Asignar la fecha leída al objeto
-        post.setDate(postDate); // Usa el setter que acabas de agregar
+        // 3. Asignar la fecha leída
+        post.setDate(postDate); 
 
         return post;
         
@@ -258,10 +262,13 @@ private Post parsePostFromLine(String line) {
 /** Lee y parsea todos los posts del archivo insta.ins de un usuario específico. */
 public List<Post> loadPostsFromLocalFile(String username) {
     List<Post> userPosts = new ArrayList<>();
-    // Ruta: [carpeta_usuario]/insta.ins
-    File file = new File(username, "insta.ins"); 
+    
+    // 🚨 CORRECCIÓN CRÍTICA: Asegurar la ruta absoluta usando la raíz del proyecto (user.dir)
+    // El archivo debe estar en: [Raíz del Proyecto]/[username]/insta.ins
+    File file = new File(System.getProperty("user.dir") + File.separator + username, "insta.ins");
     
     if (!file.exists()) {
+        // Esto es normal si el usuario aún no tiene posts
         return userPosts;
     }
 
@@ -430,33 +437,43 @@ public void toggleFollow(String followerUsername, String targetUsername) {
     public void publishPost(Post post) throws IOException {
     String username = post.getUsername();
     
-    // 1. Encontrar el usuario (se asume que existe ya que creó el post)
+    // 1. y 2. (Objetos en memoria y serialización .dat) - Se mantienen sin cambios
     User user = getUserByUsername(username); 
     if (user == null) {
         throw new IllegalArgumentException("Usuario no encontrado para publicar el post.");
     }
-    
-    // 2. ACTUALIZAR OBJETO SERIALIZADO (.dat)
-    // Esto añade el post a la lista 'posts' del objeto User en memoria
-    user.addPost(post); 
-    // Guarda el objeto User actualizado en la lista users y serializa la lista completa
-    saveUser(user); 
+    user.addPost(post);
+    saveUser(user);
     
     // 3. PERSISTIR EN ARCHIVO DE TEXTO PLANO (.ins)
-    // El formato debe coincidir con lo que lee parsePostFromLine:
-    // [username]#[YYYYMMDD_HHmmss]#[caption]
     
     // Formatear la fecha a String
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     String dateString = post.getDate().format(formatter);
     
-    String postRecord = String.format("%s#%s#%s", 
-                                      post.getUsername(), 
-                                      dateString, 
-                                      post.getCaption().replaceAll("[\r\n]", " ")); // Limpiar saltos de línea en caption
+    // --- 🚨 INICIO DE LA CORRECCIÓN CRÍTICA DE LA RUTA ---
+    String rawImagePath = post.getImagePath();
+    String cleanedImagePath;
+
+    // Si la ruta contiene un separador de archivo ('/' o '\'), asumimos que es una ruta completa.
+    // Usamos new File(rawImagePath).getName() para extraer SÓLO el nombre del archivo.
+    if (rawImagePath != null && (rawImagePath.contains(File.separator) || new File(rawImagePath).isAbsolute())) {
+         cleanedImagePath = new File(rawImagePath).getName();
+    } else {
+         // Si ya es solo el nombre del archivo (ej: "post_img_123.png"), lo usamos directamente.
+         cleanedImagePath = rawImagePath;
+    }
+    // --- 🚨 FIN DE LA CORRECCIÓN CRÍTICA DE LA RUTA ---
+
+    // Crear el registro con el formato: [username]#[fecha]#[nombre_archivo]#[caption]
+    String postRecord = String.format("%s#%s#%s#%s", 
+                                      post.getUsername(),
+                                      dateString,
+                                      cleanedImagePath, // <-- USAMOS LA RUTA LIMPIA
+                                      post.getCaption().replaceAll("[\r\n]", " "));
 
     // Escribir el registro en la carpeta local del usuario
-    writeLocalFile(username, "insta.ins", postRecord); 
+    writeLocalFile(username, "insta.ins", postRecord);
 }
 
 // ----------------------------------------------------------------------
