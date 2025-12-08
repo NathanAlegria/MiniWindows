@@ -15,7 +15,9 @@ import java.util.List;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -209,4 +211,44 @@ public List<Post> getAllRelevantPostsByDate(User loggedUser) {
         saveUser(follower);
         saveUser(target);
     }
+    
+    public List<Post> searchPostsByHashtag(String hashtag) {
+    // Usamos un LinkedHashSet para garantizar la unicidad de los posts
+    // y mantener el orden de inserción (aunque el requisito dice que el orden no importa).
+    Set<Post> uniquePosts = new LinkedHashSet<>();
+    
+    // Convertimos la búsqueda a minúsculas y aseguramos que tenga el '#'
+    String normalizedHashtag = hashtag.toLowerCase();
+    if (!normalizedHashtag.startsWith("#")) {
+        normalizedHashtag = "#" + normalizedHashtag;
+    }
+
+    // 1. Recorrer todos los usuarios (debemos recargar la lista si no se hizo recientemente)
+    // Aunque loadUsers se llama en getUserByUsername, es más seguro y explícito aquí.
+    this.users = loadUsers(); 
+
+    // 2. Iterar sobre todos los posts de todos los usuarios
+    for (User user : users) {
+        for (Post post : user.getPosts()) {
+            
+            String caption = post.getCaption();
+            
+            // Verificación: Solo si el post tiene descripción
+            if (caption != null && !caption.trim().isEmpty()) {
+                
+                // Normalizar la descripción para la búsqueda sin importar mayúsculas
+                String normalizedCaption = caption.toLowerCase();
+                
+                // CRÍTICO: Comprobar si la descripción contiene el hashtag.
+                // Usamos contains() para manejar hashtags en cualquier parte del texto.
+                if (normalizedCaption.contains(normalizedHashtag)) {
+                    uniquePosts.add(post);
+                }
+            }
+        }
+    }
+
+    // 3. Devolver la lista de posts únicos
+    return new ArrayList<>(uniquePosts);
+}
 }
