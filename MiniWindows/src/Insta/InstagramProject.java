@@ -16,6 +16,8 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
@@ -34,17 +36,16 @@ import javax.imageio.ImageIO;
 public class InstagramProject extends JPanel {
 
     private CardLayout cardLayout;
-private JPanel centerContentPanel;
+    private JPanel centerContentPanel;
     private JPanel mainPanel;
     private UserManager userManager;
     private User loggedUser;
     private JPanel profileCardContainer;
-    private JPanel resultsPanel;      
-    private JTextField txtSearchUser; 
+    private JPanel resultsPanel;
+    private JTextField txtSearchUser;
     private JTextField txtSearchHashtag;
     private JPanel hashtagResultsPanel;
     private JPanel notificationsListPanel;
-    
 
     // Colores Estilo Instagram Dark Mode
     private final Color BG_COLOR = new Color(0, 0, 0); // Fondo negro
@@ -56,11 +57,11 @@ private JPanel centerContentPanel;
 
     public InstagramProject() {
         userManager = new UserManager();
-        
+
         // El JPanel principal (this) ahora usa BorderLayout para contener el CardLayout global
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(900, 700)); 
-        
+        setPreferredSize(new Dimension(900, 700));
+
         // 1. Crear el CardLayout Global (mainPanel)
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout); // Contenedor de cartas global: LOGIN, REGISTER, ROOT_VIEW
@@ -68,34 +69,34 @@ private JPanel centerContentPanel;
         // 2. Crear la Vista Raíz Logueada (ROOT_VIEW)
         JPanel rootView = new JPanel(new BorderLayout());
         rootView.setBackground(BG_COLOR);
-        
+
         // 2a. Sidebar Fijo a la izquierda
-        JPanel sidebar = crearSidebarDesktop(); 
-        rootView.add(sidebar, BorderLayout.WEST); 
-        
+        JPanel sidebar = crearSidebarDesktop();
+        rootView.add(sidebar, BorderLayout.WEST);
+
         // 2b. Contenedor de Cartas para el Centro (contenido variable)
         CardLayout contentLayout = new CardLayout();
-        centerContentPanel = new JPanel(contentLayout); 
-        
+        centerContentPanel = new JPanel(contentLayout);
+
         // 3. Agregar todas las tarjetas de CONTENIDO al centerContentPanel
         centerContentPanel.add(crearFeedContentWrapper(), "MAIN"); // El Feed
         centerContentPanel.add(crearPanelProfileSearch(), "PROFILE_SEARCH"); // Buscador de perfiles
-        
+
         // --- NUEVAS TARJETAS DE CONTENIDO ---
-        centerContentPanel.add(crearPanelCrearPostContent(), "CREATE_POST"); 
+        centerContentPanel.add(crearPanelCrearPostContent(), "CREATE_POST");
         centerContentPanel.add(crearPanelHashtagSearchContent(), "HASHTAG_SEARCH");
         centerContentPanel.add(crearPanelNotificacionesContent(), "NOTIFICATIONS");
-        
+
         rootView.add(centerContentPanel, BorderLayout.CENTER);
-        
+
         // 4. Agregar todas las vistas principales al mainPanel (el CardLayout global)
-        mainPanel.add(crearPanelLogin(), "LOGIN"); 
-        mainPanel.add(crearPanelRegistro(), "REGISTER"); 
+        mainPanel.add(crearPanelLogin(), "LOGIN");
+        mainPanel.add(crearPanelRegistro(), "REGISTER");
         mainPanel.add(rootView, "ROOT_VIEW"); // ¡Esta es la vista logueada!
 
         // 5. Agregar el CardLayout global al Frame
         add(mainPanel, BorderLayout.CENTER);
-        
+
         // Mostrar la vista de inicio (Login)
         cardLayout.show(mainPanel, "LOGIN");
     }
@@ -144,10 +145,10 @@ private JPanel centerContentPanel;
                 }
 
                 loggedUser = userManager.login(u, p);
-                cardLayout.show(mainPanel, "ROOT_VIEW"); 
-        
+                cardLayout.show(mainPanel, "ROOT_VIEW");
+
                 CardLayout clCenter = (CardLayout) centerContentPanel.getLayout();
-                clCenter.show(centerContentPanel, "MAIN"); 
+                clCenter.show(centerContentPanel, "MAIN");
                 rebuildMainFeed();
                 JOptionPane.showMessageDialog(this, "Bienvenido " + loggedUser.getNombre(), "Login Exitoso", JOptionPane.INFORMATION_MESSAGE);
 
@@ -212,7 +213,7 @@ private JPanel centerContentPanel;
 
         JPasswordField txtPass = styledPasswordField("Contraseña");
         txtPass.setBounds(50, 170, 300, 35);
- 
+
         JTextField txtEdad = styledTextField("Edad");
         txtEdad.setBounds(50, 215, 140, 35);
 
@@ -246,24 +247,32 @@ private JPanel centerContentPanel;
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 try {
-                    // Crear un nombre único para la foto de perfil
+                    // Nombre único para evitar sobrescribir
                     String newFileName = "profile_" + System.currentTimeMillis() + "_" + selectedFile.getName();
 
-                    // Ruta de la raíz del proyecto
-                    String projectRoot = System.getProperty("user.dir");
-                    File destFile = new File(projectRoot, newFileName);
+                    // Obtener la raíz del proyecto
+                    String projectRoot = new File("").getAbsolutePath();
 
-                    // Copiar el archivo seleccionado a la raíz del proyecto
-                    java.nio.file.Files.copy(selectedFile.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    // Archivo de destino en la raíz del proyecto
+                    File destFile = new File(projectRoot + File.separator + newFileName);
 
-                    // Guardamos solo el nombre del archivo
+                    // Copiar archivo al destino
+                    java.nio.file.Files.copy(
+                            selectedFile.toPath(),
+                            destFile.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                    );
+
+                    // Guardar la ruta relativa para usarla después
                     photoPath[0] = newFileName;
+
+                    // Actualizar botón con nombre de archivo
                     btnPhoto.setText(selectedFile.getName());
                     btnPhoto.setForeground(BTN_BLUE);
+
                 } catch (Exception ex) {
                     btnPhoto.setText("Error al guardar imagen");
                     btnPhoto.setForeground(Color.RED);
-                    ex.printStackTrace();
                 }
             }
         });
@@ -275,7 +284,6 @@ private JPanel centerContentPanel;
         registerCard.add(txtEdad);
 
         // Dentro de la clase InstagramProject, en el método crearPanelRegistro()...
-
         JButton btnRegister = styledButton("Registrarte");
         btnRegister.setBounds(50, 330, 300, 40);
         btnRegister.addActionListener(e -> {
@@ -354,57 +362,56 @@ private JPanel centerContentPanel;
 
     // --- PANEL PRINCIPAL (FEED) (EXISTENTE) ---
     // --- CÓDIGO MODIFICADO: crearFeedContentWrapper ---
-   private JPanel crearFeedContentWrapper() {
-    JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
-    contentAreaWrapper.setBackground(BG_COLOR);
+    private JPanel crearFeedContentWrapper() {
+        JPanel contentAreaWrapper = new JPanel(new GridBagLayout());
+        contentAreaWrapper.setBackground(BG_COLOR);
 
-    // Panel con los posts
-    JPanel feedContent = new JPanel();
-    feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
-    feedContent.setBackground(BG_COLOR);
-    feedContent.setName("FEED_POSTS_INNER_PANEL");
+        // Panel con los posts
+        JPanel feedContent = new JPanel();
+        feedContent.setLayout(new BoxLayout(feedContent, BoxLayout.Y_AXIS));
+        feedContent.setBackground(BG_COLOR);
+        feedContent.setName("FEED_POSTS_INNER_PANEL");
 
-    int feedWidth = 550;
-    feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
-    feedContent.setMinimumSize(new Dimension(feedWidth, 0));
+        int feedWidth = 550;
+        feedContent.setMaximumSize(new Dimension(feedWidth, Integer.MAX_VALUE));
+        feedContent.setMinimumSize(new Dimension(feedWidth, 0));
 
-    loadFeedPosts(feedContent, feedWidth);
+        loadFeedPosts(feedContent, feedWidth);
 
-    // ScrollPane
-    JScrollPane scrollPane = new JScrollPane(feedContent);
-    scrollPane.setName("FEED_SCROLL_PANE");
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-    scrollPane.setBorder(null);
-    scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
+        // ScrollPane
+        JScrollPane scrollPane = new JScrollPane(feedContent);
+        scrollPane.setName("FEED_SCROLL_PANE");
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setBackground(BG_COLOR);
 
-    // GridBagConstraints para centrar el feed
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.anchor = GridBagConstraints.CENTER;
+        // GridBagConstraints para centrar el feed
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
 
-    // MUY IMPORTANTE: ocupar espacio horizontal y vertical
-    gbc.fill = GridBagConstraints.BOTH;
+        // MUY IMPORTANTE: ocupar espacio horizontal y vertical
+        gbc.fill = GridBagConstraints.BOTH;
 
-    // Añadir scrollPane centrado
-    contentAreaWrapper.add(scrollPane, gbc);
+        // Añadir scrollPane centrado
+        contentAreaWrapper.add(scrollPane, gbc);
 
-    return contentAreaWrapper;
-}
+        return contentAreaWrapper;
+    }
 
     // --- PANEL PRINCIPAL (FEED) (MODIFICADO) ---
-
     private JPanel crearPanelPrincipal() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-    // AGREGAR SOLO UNA VEZ CADA PANEL
-    panel.add(crearSidebarDesktop(), BorderLayout.WEST);
-    panel.add(crearFeedContentWrapper(), BorderLayout.CENTER);
+        // AGREGAR SOLO UNA VEZ CADA PANEL
+        panel.add(crearSidebarDesktop(), BorderLayout.WEST);
+        panel.add(crearFeedContentWrapper(), BorderLayout.CENTER);
 
-    return panel;
-}
+        return panel;
+    }
 
 // --- NUEVO MÉTODO: Cargar y Mostrar el Feed ---
     private void loadFeedPosts(JPanel feedContent, int feedWidth) {
@@ -445,83 +452,17 @@ private JPanel centerContentPanel;
     }
 
 // --- NUEVO MÉTODO: Vista Detallada de un Post para el Feed ---
-    private JPanel createPostFeedView(Post post, int width) {
-        JPanel postPanel = new JPanel();
-        postPanel.setLayout(new BoxLayout(postPanel, BoxLayout.Y_AXIS));
-        postPanel.setBackground(POST_BG);
-        postPanel.setBorder(new LineBorder(BORDER_COLOR, 1));
-        postPanel.setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
-
-        // 1. Cabecera (Username y Foto de Perfil)
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        header.setBackground(POST_BG);
-        header.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        User postAuthor = userManager.getUserByUsername(post.getAuthorUsername());
-
-        JLabel lblAuthor = new JLabel(post.getAuthorUsername());
-        lblAuthor.setFont(new Font("SansSerif", Font.BOLD, 16));
-        lblAuthor.setForeground(TEXT_COLOR);
-
-        JLabel lblProfilePic = new JLabel(cargarImagenCuadrada(postAuthor.getFotoPath(), 30));
-
-        header.add(lblProfilePic);
-        header.add(lblAuthor);
-        postPanel.add(header);
-
-        // 2. Imagen del Post
-        int imageSize = width; // La imagen ocupa todo el ancho del post
-        JLabel lblImage = new JLabel();
-        ImageIcon postIcon = cargarImagenCuadrada(post.getImagePath(), imageSize);
-        if (postIcon != null) {
-            lblImage.setIcon(postIcon);
-        } else {
-            lblImage.setText("No Image");
-            lblImage.setForeground(Color.RED);
-        }
-        lblImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        postPanel.add(lblImage);
-
-        // 3. Botones (Like y Comentar)
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        actions.setBackground(POST_BG);
-        actions.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Botón de Like
-        JButton btnLike = createIconButton("💖", 24);
-        // Necesitas un método para crear un botón con un ícono o emoji
-        btnLike.setForeground(post.isLikedBy(loggedUser.getUsername()) ? Color.RED : TEXT_COLOR);
-        btnLike.addActionListener(e -> handleLikeAction(post, btnLike));
-        actions.add(btnLike);
-
-        // Contador de Likes
-        JLabel lblLikes = new JLabel(post.getLikesCount() + " likes");
-        lblLikes.setForeground(TEXT_COLOR);
-        lblLikes.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        actions.add(lblLikes);
-        actions.add(Box.createHorizontalStrut(20));
-
-        // Botón de Comentar (Asume un ícono de burbuja de diálogo "💬")
-        JButton btnComment = createIconButton("💬", 24);
-        btnComment.addActionListener(e -> showCommentDialog(post));
-        actions.add(btnComment);
-
-        postPanel.add(actions);
-
-        // 4. Descripción (Caption)
-        JTextArea txtCaption = new JTextArea(post.getCaption());
-        txtCaption.setEditable(false);
-        txtCaption.setBackground(POST_BG);
-        txtCaption.setForeground(TEXT_COLOR);
-        txtCaption.setLineWrap(true);
-        txtCaption.setWrapStyleWord(true);
-        txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        txtCaption.setBorder(new EmptyBorder(5, 15, 10, 15));
-        txtCaption.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        postPanel.add(txtCaption);
-
-        return postPanel;
+    private JPanel createPostFeedView(Post post, int feedWidth) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(POST_BG);
+        panel.setMaximumSize(new Dimension(feedWidth, 400));
+        JLabel lblImage = new JLabel(cargarImagenCuadrada(post.getImagePath(), 350));
+        panel.add(lblImage, BorderLayout.CENTER);
+        JLabel lblCaption = new JLabel("<html><b>@" + post.getAuthorUsername() + "</b>: " + post.getCaption() + "</html>");
+        lblCaption.setForeground(TEXT_COLOR);
+        lblCaption.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.add(lblCaption, BorderLayout.SOUTH);
+        return panel;
     }
 
 // --- NUEVO MÉTODO: Crea el panel con el grid de posts ---
@@ -542,7 +483,7 @@ private JPanel centerContentPanel;
 // Debe devolver SÓLO el JPanel con las miniaturas, no el JScrollPane.
 // --- REEMPLAZO COMPLETO DEL MÉTODO crearPostsGrid ---
     private JPanel crearPostsGrid(User targetUser) {
-    List<Post> userPosts = userManager.loadPostsFromLocalFile(targetUser.getUsername());
+        List<Post> userPosts = userManager.loadPostsFromLocalFile(targetUser.getUsername());
 
         // Si no hay posts, devolvemos el wrapper centrado (tal como lo tienes)
         if (userPosts.isEmpty()) {
@@ -603,43 +544,45 @@ private JPanel centerContentPanel;
         // --- 5. Rellenar el espacio restante si la última fila está incompleta ---
         // Esto es crucial. Rellena el espacio horizontal restante para que los posts
         // siempre se peguen a la izquierda sin estirarse.
-       if (col > 0) {
-        gbc.gridx = col;
-        gbc.weightx = 1.0; 
-        gridPanel.add(Box.createHorizontalGlue(), gbc);
-    }
+        if (col > 0) {
+            gbc.gridx = col;
+            gbc.weightx = 1.0;
+            gridPanel.add(Box.createHorizontalGlue(), gbc);
+        }
 
-    // Rellena el espacio vertical restante
-    gbc.gridx = 0;
-    gbc.gridy = row + 1;
-    gbc.weighty = 1.0; 
-    gbc.gridwidth = 3; // Ocupa las 3 columnas
-    gridPanel.add(Box.createVerticalGlue(), gbc);
+        // Rellena el espacio vertical restante
+        gbc.gridx = 0;
+        gbc.gridy = row + 1;
+        gbc.weighty = 1.0;
+        gbc.gridwidth = 3; // Ocupa las 3 columnas
+        gridPanel.add(Box.createVerticalGlue(), gbc);
 
         return gridPanel;
     }
 
     // Dentro de la clase InstagramProject:
+    /**
+     * Crea un JButton para la acción de "Me gusta" con el estado visual
+     * inicial.
+     */
+    private JButton createLikeButton(Post post) {
+        JButton btnLike = new JButton();
+        btnLike.setBorderPainted(false);
+        btnLike.setFocusPainted(false);
+        btnLike.setContentAreaFilled(false); // Estilo transparente
+        btnLike.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLike.setFont(new Font("SansSerif", Font.BOLD, 16));
 
-/** Crea un JButton para la acción de "Me gusta" con el estado visual inicial. */
-private JButton createLikeButton(Post post) {
-    JButton btnLike = new JButton();
-    btnLike.setBorderPainted(false);
-    btnLike.setFocusPainted(false);
-    btnLike.setContentAreaFilled(false); // Estilo transparente
-    btnLike.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    btnLike.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-    // Inicializar el estado visual del botón
-    if (loggedUser != null && post.isLikedBy(loggedUser.getUsername())) {
-        btnLike.setText("❤️");
-        btnLike.setForeground(Color.RED);
-    } else {
-        btnLike.setText("♡");
-        btnLike.setForeground(Color.GRAY);
+        // Inicializar el estado visual del botón
+        if (loggedUser != null && post.isLikedBy(loggedUser.getUsername())) {
+            btnLike.setText("❤️");
+            btnLike.setForeground(Color.RED);
+        } else {
+            btnLike.setText("♡");
+            btnLike.setForeground(Color.GRAY);
+        }
+        return btnLike;
     }
-    return btnLike;
-}
 // --- NUEVO MÉTODO: Maneja el like/unlike de un post ---
 
     private void handleLikeAction(Post post, JButton likeButton) {
@@ -750,181 +693,170 @@ private JButton createLikeButton(Post post) {
     }
 
     // --- PANEL CREAR POST (NUEVO) ---
-   private JPanel crearPanelCrearPostContent() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
-    
-    // ❌ ELIMINADO: Antes tenía: panel.add(crearSidebarDesktop(), BorderLayout.WEST);
-    // ¡ESTO ES LO CLAVE! Ahora el sidebar se agrega en el contenedor raíz (rootView)
-    // fuera de este CardLayout.
+    private JPanel crearPanelCrearPostContent() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-    // Contenedor Central con GridBagLayout para centrar el formulario
-    JPanel centerWrapper = new JPanel(new GridBagLayout());
-    centerWrapper.setBackground(BG_COLOR);
+        // ❌ ELIMINADO: Antes tenía: panel.add(crearSidebarDesktop(), BorderLayout.WEST);
+        // ¡ESTO ES LO CLAVE! Ahora el sidebar se agrega en el contenedor raíz (rootView)
+        // fuera de este CardLayout.
+        // Contenedor Central con GridBagLayout para centrar el formulario
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setBackground(BG_COLOR);
 
-    // ... (El resto del código del formulario de publicación no necesita cambios) ...
+        // ... (El resto del código del formulario de publicación no necesita cambios) ...
+        JPanel formCard = new JPanel(new BorderLayout(10, 10));
+        formCard.setPreferredSize(new Dimension(500, 500));
+        formCard.setBackground(POST_BG);
+        formCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-    JPanel formCard = new JPanel(new BorderLayout(10, 10));
-    formCard.setPreferredSize(new Dimension(500, 500));
-    formCard.setBackground(POST_BG);
-    formCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // ... (JLabel title, JTextArea txtCaption, JScrollPane, JButton btnSelectImage, etc.) ...
+        // 1. Título
+        JLabel title = new JLabel("✨ Crear Nueva Publicación", SwingConstants.CENTER);
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        title.setForeground(TEXT_COLOR);
+        formCard.add(title, BorderLayout.NORTH);
 
-    // ... (JLabel title, JTextArea txtCaption, JScrollPane, JButton btnSelectImage, etc.) ...
-    
-    // 1. Título
-    JLabel title = new JLabel("✨ Crear Nueva Publicación", SwingConstants.CENTER);
-    title.setFont(new Font("SansSerif", Font.BOLD, 20));
-    title.setForeground(TEXT_COLOR);
-    formCard.add(title, BorderLayout.NORTH);
+        // 2. Formulario de Post (Caption, Imagen, Status)
+        JPanel postForm = new JPanel();
+        postForm.setLayout(new BoxLayout(postForm, BoxLayout.Y_AXIS));
+        postForm.setBackground(POST_BG);
+        postForm.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-    // 2. Formulario de Post (Caption, Imagen, Status)
-    JPanel postForm = new JPanel();
-    postForm.setLayout(new BoxLayout(postForm, BoxLayout.Y_AXIS));
-    postForm.setBackground(POST_BG);
-    postForm.setBorder(new EmptyBorder(10, 0, 0, 0));
+        // Campo de descripción (Caption)
+        JTextArea txtCaption = new JTextArea(5, 20);
+        txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        txtCaption.setForeground(TEXT_COLOR);
+        txtCaption.setBackground(INPUT_BG);
+        txtCaption.setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 1));
+        txtCaption.setCaretColor(TEXT_COLOR);
+        txtCaption.setLineWrap(true);
+        txtCaption.setWrapStyleWord(true);
+        JScrollPane captionScroll = new JScrollPane(txtCaption);
+        captionScroll.setBorder(BorderFactory.createTitledBorder(
+                new LineBorder(BORDER_COLOR), "Escribe la descripción...", 0, 0, null, Color.GRAY));
+        captionScroll.setMaximumSize(new Dimension(460, 150));
+        captionScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        postForm.add(captionScroll);
+        postForm.add(Box.createVerticalStrut(20));
 
-    // Campo de descripción (Caption)
-    JTextArea txtCaption = new JTextArea(5, 20);
-    txtCaption.setFont(new Font("SansSerif", Font.PLAIN, 14));
-    txtCaption.setForeground(TEXT_COLOR);
-    txtCaption.setBackground(INPUT_BG);
-    txtCaption.setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 1));
-    txtCaption.setCaretColor(TEXT_COLOR);
-    txtCaption.setLineWrap(true);
-    txtCaption.setWrapStyleWord(true);
-    JScrollPane captionScroll = new JScrollPane(txtCaption);
-    captionScroll.setBorder(BorderFactory.createTitledBorder(
-            new LineBorder(BORDER_COLOR), "Escribe la descripción...", 0, 0, null, Color.GRAY));
-    captionScroll.setMaximumSize(new Dimension(460, 150));
-    captionScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
-    postForm.add(captionScroll);
-    postForm.add(Box.createVerticalStrut(20));
+        // Botón para seleccionar Imagen
+        JButton btnSelectImage = styledButton("Seleccionar Imagen");
+        btnSelectImage.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnSelectImage.setMaximumSize(new Dimension(460, 40));
 
-    // Botón para seleccionar Imagen
-    JButton btnSelectImage = styledButton("Seleccionar Imagen");
-    btnSelectImage.setAlignmentX(Component.LEFT_ALIGNMENT);
-    btnSelectImage.setMaximumSize(new Dimension(460, 40));
+        // Placeholder para la ruta de la imagen
+        final String[] imagePath = {""};
+        JLabel lblImageStatus = createDetailLabel("Archivo: Ninguno seleccionado");
+        lblImageStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    // Placeholder para la ruta de la imagen
-    final String[] imagePath = {""};
-    JLabel lblImageStatus = createDetailLabel("Archivo: Ninguno seleccionado");
-    lblImageStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnSelectImage.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes JPG & PNG", "jpg", "png", "jpeg");
+            fileChooser.setFileFilter(filter);
 
-    btnSelectImage.addActionListener(e -> {
-        JFileChooser fileChooser = new JFileChooser();
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes JPG & PNG", "jpg", "png", "jpeg");
-        fileChooser.setFileFilter(filter);
+            int returnValue = fileChooser.showOpenDialog(null);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
 
-        int returnValue = fileChooser.showOpenDialog(null);
-        if (returnValue == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            
-            // 🚨 CAMBIO CRÍTICO A PARTIR DE AQUÍ:
-            
-            // 1. Crear un nombre único para el archivo (usando la ruta del usuario logueado)
-            if (loggedUser == null) {
-                lblImageStatus.setText("Error: Usuario no logueado.");
-                lblImageStatus.setForeground(Color.RED);
-                return;
-            }
-            
-            String username = loggedUser.getUsername();
-            // Creamos un nombre único usando el timestamp para evitar colisiones
-            String fileExtension = selectedFile.getName().substring(selectedFile.getName().lastIndexOf("."));
-            String uniqueFileName = "post_img_" + System.currentTimeMillis() + fileExtension;
-
-            // 2. Definir la ruta de destino dentro de la CARPETA DEL USUARIO
-            // Ejemplo: Link/post_img_123456.png
-            File userFolder = new File(username);
-            File destFile = new File(userFolder, uniqueFileName);
-            
-            try {
-                // 3. ASEGURAR QUE LA CARPETA EXISTA (aunque ya se hace en registrarUsuario, es seguro repetirlo)
-                if (!userFolder.exists()) {
-                    userFolder.mkdirs(); 
+                if (loggedUser == null) {
+                    lblImageStatus.setText("Error: Usuario no logueado.");
+                    lblImageStatus.setForeground(Color.RED);
+                    return;
                 }
 
-                // 4. Copiar el archivo seleccionado a la carpeta del usuario
-                java.nio.file.Files.copy(selectedFile.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                String fileExtension = selectedFile.getName().substring(selectedFile.getName().lastIndexOf("."));
+                String uniqueFileName = "post_img_" + System.currentTimeMillis() + fileExtension;
 
-                // 5. Guardar la RUTA RELATIVA (carpeta/archivo) que debe usar la GUI
-                imagePath[0] = username + File.separator + uniqueFileName;
-                lblImageStatus.setText("Archivo guardado: " + uniqueFileName);
-                lblImageStatus.setForeground(BTN_BLUE);
-                
+                String projectRoot = new File("").getAbsolutePath();
+                File destFile = new File(projectRoot + File.separator + uniqueFileName);
+
+                try {
+                    java.nio.file.Files.copy(
+                            selectedFile.toPath(),
+                            destFile.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                    );
+
+                    // Guardar solo el nombre del archivo, ya está en la raíz
+                    imagePath[0] = uniqueFileName;
+                    lblImageStatus.setText("Archivo guardado: " + uniqueFileName);
+                    lblImageStatus.setForeground(BTN_BLUE);
+
+                } catch (Exception ex) {
+                    lblImageStatus.setText("Error al guardar imagen: " + ex.getMessage());
+                    lblImageStatus.setForeground(Color.RED);
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        postForm.add(btnSelectImage);
+        postForm.add(Box.createVerticalStrut(5));
+        postForm.add(lblImageStatus);
+        postForm.add(Box.createVerticalGlue());
+
+        // Botón Publicar
+        JButton btnPost = styledButton("Publicar");
+        btnPost.setMaximumSize(new Dimension(460, 40));
+        btnPost.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnPost.setBackground(new Color(255, 105, 180)); // Pinkish color for post
+
+        btnPost.addActionListener(e -> {
+            try {
+                String caption = txtCaption.getText().trim();
+                String path = imagePath[0];
+
+                if (loggedUser == null) {
+                    throw new Exception("Debes iniciar sesión para publicar.");
+                }
+                if (path.isEmpty() || path.equals("default_user.png")) {
+                    throw new EmptyFieldException("Debes seleccionar una imagen para la publicación.");
+                }
+                // Si el caption está vacío, lo dejamos vacío, es válido.
+
+                // 1. Crear el objeto Post
+                Post newPost = new Post(loggedUser.getUsername(), path, caption);
+
+                // 2. 🚨 CORRECCIÓN CRÍTICA: Llamar al método de persistencia híbrida
+                // ESTO REEMPLAZA las 5 líneas de userManager.getUserByUsername, addPost y saveUser.
+                // Si userManager.publishPost() falla, lanza una Exception de IO.
+                userManager.publishPost(newPost);
+
+                // 3. Actualizar la instancia local del usuario logueado (Opcional, pero seguro)
+                // Ya que publishPost guarda la instancia en la lista central, refrescamos loggedUser
+                loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
+
+                JOptionPane.showMessageDialog(this, "Publicación creada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+                // Limpiar campos y volver al inicio
+                txtCaption.setText("");
+                imagePath[0] = "";
+                lblImageStatus.setText("Archivo: Ninguno seleccionado");
+                lblImageStatus.setForeground(TEXT_COLOR);
+
+                // ⚠️ CRÍTICO: Navegar de vuelta al Feed del centro (MAIN)
+                CardLayout clCenter = (CardLayout) centerContentPanel.getLayout();
+                clCenter.show(centerContentPanel, "MAIN");
+
+                // 2. Recargar el feed para mostrar el nuevo post
+                rebuildMainFeed();
+
+            } catch (EmptyFieldException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Advertencia", JOptionPane.WARNING_MESSAGE);
             } catch (Exception ex) {
-                lblImageStatus.setText("Error al guardar imagen: " + ex.getMessage());
-                lblImageStatus.setForeground(Color.RED);
+                JOptionPane.showMessageDialog(this, "Error al publicar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        }
-    });
+        });
 
-    postForm.add(btnSelectImage);
-    postForm.add(Box.createVerticalStrut(5));
-    postForm.add(lblImageStatus);
-    postForm.add(Box.createVerticalGlue());
+        formCard.add(postForm, BorderLayout.CENTER);
+        formCard.add(btnPost, BorderLayout.SOUTH);
 
-    // Botón Publicar
-    JButton btnPost = styledButton("Publicar");
-    btnPost.setMaximumSize(new Dimension(460, 40));
-    btnPost.setAlignmentX(Component.CENTER_ALIGNMENT);
-    btnPost.setBackground(new Color(255, 105, 180)); // Pinkish color for post
+        centerWrapper.add(formCard);
+        panel.add(centerWrapper, BorderLayout.CENTER);
 
-    btnPost.addActionListener(e -> {
-        try {
-            String caption = txtCaption.getText().trim();
-            String path = imagePath[0];
-
-            if (loggedUser == null) {
-                throw new Exception("Debes iniciar sesión para publicar.");
-            }
-            if (path.isEmpty() || path.equals("default_user.png")) {
-                throw new EmptyFieldException("Debes seleccionar una imagen para la publicación.");
-            }
-            // Si el caption está vacío, lo dejamos vacío, es válido.
-
-            // 1. Crear el objeto Post
-            Post newPost = new Post(loggedUser.getUsername(), path, caption);
-            
-            // 2. 🚨 CORRECCIÓN CRÍTICA: Llamar al método de persistencia híbrida
-            // ESTO REEMPLAZA las 5 líneas de userManager.getUserByUsername, addPost y saveUser.
-            // Si userManager.publishPost() falla, lanza una Exception de IO.
-            userManager.publishPost(newPost);
-            
-            // 3. Actualizar la instancia local del usuario logueado (Opcional, pero seguro)
-            // Ya que publishPost guarda la instancia en la lista central, refrescamos loggedUser
-            loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
-
-            JOptionPane.showMessageDialog(this, "Publicación creada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-            // Limpiar campos y volver al inicio
-            txtCaption.setText("");
-            imagePath[0] = "";
-            lblImageStatus.setText("Archivo: Ninguno seleccionado");
-            lblImageStatus.setForeground(TEXT_COLOR);
-
-            // ⚠️ CRÍTICO: Navegar de vuelta al Feed del centro (MAIN)
-            CardLayout clCenter = (CardLayout) centerContentPanel.getLayout();
-            clCenter.show(centerContentPanel, "MAIN"); 
-
-            // 2. Recargar el feed para mostrar el nuevo post
-            rebuildMainFeed();
-
-        } catch (EmptyFieldException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Advertencia", JOptionPane.WARNING_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error al publicar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    });
-
-    formCard.add(postForm, BorderLayout.CENTER);
-    formCard.add(btnPost, BorderLayout.SOUTH);
-
-    centerWrapper.add(formCard);
-    panel.add(centerWrapper, BorderLayout.CENTER);
-
-    return panel;
-}
+        return panel;
+    }
 
     private void showPostDetail(Post post) {
 
@@ -1023,9 +955,9 @@ private JButton createLikeButton(Post post) {
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         contentWrapper.add(lblImage, gbc);
-        
-        JPanel commentsInnerPanel = createCommentsSidePanel(post); 
-    
+
+        JPanel commentsInnerPanel = createCommentsSidePanel(post);
+
         // 1. Crear el JScrollPane y poner el panel de comentarios dentro
         JScrollPane commentsScrollPane = new JScrollPane(commentsInnerPanel);
         commentsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -1034,14 +966,14 @@ private JButton createLikeButton(Post post) {
         commentsScrollPane.getVerticalScrollBar().setUnitIncrement(16); // Scroll más rápido
 
         // 2. Asignar el tamaño al JScrollPane
-        commentsScrollPane.setPreferredSize(new Dimension(300, imgSize)); 
+        commentsScrollPane.setPreferredSize(new Dimension(300, imgSize));
 
         gbc.gridx = 1;
         gbc.weightx = 0.6;
         gbc.weighty = 1.0;
         // 3. Agregar el JScrollPane al contentWrapper
         contentWrapper.add(commentsScrollPane, gbc);
-    
+
         JPanel sidePanel = createCommentsSidePanel(post);
         sidePanel.setPreferredSize(new Dimension(300, imgSize));
 
@@ -1178,33 +1110,33 @@ private JButton createLikeButton(Post post) {
 
         // Lógica al hacer clic en ENVIAR
         btnPostComment.addActionListener(e -> {
-        String commentText = txtComment.getText().trim();
-        if (loggedUser == null) {
-            JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (!commentText.isEmpty()) {
-            
-            // 1. Crear el nuevo comentario
-            Comment newComment = new Comment(loggedUser.getUsername(), commentText);
-            
-            // 2. LLAMADA CRÍTICA: Delegar la lógica de adición y guardado al UserManager
-            // Esto garantiza que el post dentro de la lista del autor sea actualizado antes de la serialización.
-            boolean success = userManager.addCommentAndSave(post, newComment);
-
-            if (success) {
-                // 3. Limpiar el campo de texto
-                txtComment.setText("");
-                
-                // 4. Recargar la vista de detalle para mostrar el nuevo comentario
-                // La vista detallada cargará el post recién guardado del archivo.
-                showPostDetail(post);
-            } else {
-                 JOptionPane.showMessageDialog(this, "Error al guardar el comentario.", "Error", JOptionPane.ERROR_MESSAGE);
+            String commentText = txtComment.getText().trim();
+            if (loggedUser == null) {
+                JOptionPane.showMessageDialog(this, "Inicia sesión para comentar.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-        }
-    });
+
+            if (!commentText.isEmpty()) {
+
+                // 1. Crear el nuevo comentario
+                Comment newComment = new Comment(loggedUser.getUsername(), commentText);
+
+                // 2. LLAMADA CRÍTICA: Delegar la lógica de adición y guardado al UserManager
+                // Esto garantiza que el post dentro de la lista del autor sea actualizado antes de la serialización.
+                boolean success = userManager.addCommentAndSave(post, newComment);
+
+                if (success) {
+                    // 3. Limpiar el campo de texto
+                    txtComment.setText("");
+
+                    // 4. Recargar la vista de detalle para mostrar el nuevo comentario
+                    // La vista detallada cargará el post recién guardado del archivo.
+                    showPostDetail(post);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error al guardar el comentario.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         addCommentPanel.add(txtComment, BorderLayout.CENTER);
         addCommentPanel.add(btnPostComment, BorderLayout.EAST);
@@ -1242,149 +1174,147 @@ private JButton createLikeButton(Post post) {
 
     // --- PANEL DE BÚSQUEDA Y VISUALIZACIÓN DE PERFIL (EXISTENTE) ---
     private JPanel crearPanelProfileSearch() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-    JPanel centerPanel = new JPanel(new GridBagLayout());
-    centerPanel.setBackground(BG_COLOR);
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setBackground(BG_COLOR);
 
-    // Aseguramos que profileCardContainer sea una variable de instancia
-    profileCardContainer = new JPanel(new CardLayout());
-    profileCardContainer.setPreferredSize(new Dimension(630, 650));
-    profileCardContainer.setBackground(BG_COLOR);
+        // Aseguramos que profileCardContainer sea una variable de instancia
+        profileCardContainer = new JPanel(new CardLayout());
+        profileCardContainer.setPreferredSize(new Dimension(630, 650));
+        profileCardContainer.setBackground(BG_COLOR);
 
-    // 1. Añadir la vista de entrada de búsqueda (debes crear un método auxiliar para tu código anterior)
-    // ⚠️ Importante: El método auxiliar debe devolver SOLO la interfaz de búsqueda.
-    profileCardContainer.add(crearSearchInputView(), "SEARCH_INPUT"); 
-    
-    // 2. Añadir un panel vacío para la vista de PERFIL
-    // La función mostrarPerfil() usará esta clave para mostrar el perfil.
-    profileCardContainer.add(new JPanel(), "PROFILE_VIEW"); 
-    
-    // 3. Establecer el estado inicial a la búsqueda
-    CardLayout cl = (CardLayout) profileCardContainer.getLayout();
-    cl.show(profileCardContainer, "SEARCH_INPUT"); 
+        // 1. Añadir la vista de entrada de búsqueda (debes crear un método auxiliar para tu código anterior)
+        // ⚠️ Importante: El método auxiliar debe devolver SOLO la interfaz de búsqueda.
+        profileCardContainer.add(crearSearchInputView(), "SEARCH_INPUT");
 
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.anchor = GridBagConstraints.CENTER;
-    centerPanel.add(profileCardContainer, gbc);
+        // 2. Añadir un panel vacío para la vista de PERFIL
+        // La función mostrarPerfil() usará esta clave para mostrar el perfil.
+        profileCardContainer.add(new JPanel(), "PROFILE_VIEW");
 
-    panel.add(centerPanel, BorderLayout.CENTER);
-    return panel;
-}
-    
+        // 3. Establecer el estado inicial a la búsqueda
+        CardLayout cl = (CardLayout) profileCardContainer.getLayout();
+        cl.show(profileCardContainer, "SEARCH_INPUT");
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.CENTER;
+        centerPanel.add(profileCardContainer, gbc);
+
+        panel.add(centerPanel, BorderLayout.CENTER);
+        return panel;
+    }
+
     /**
- * Crea y devuelve el panel con el campo de texto y el área de resultados.
- * Este panel es la tarjeta "SEARCH_INPUT" dentro de profileCardContainer.
- */
-private JPanel crearSearchInputView() {
-    JPanel searchInputView = new JPanel(new BorderLayout());
-    searchInputView.setBackground(BG_COLOR);
+     * Crea y devuelve el panel con el campo de texto y el área de resultados.
+     * Este panel es la tarjeta "SEARCH_INPUT" dentro de profileCardContainer.
+     */
+    private JPanel crearSearchInputView() {
+        JPanel searchInputView = new JPanel(new BorderLayout());
+        searchInputView.setBackground(BG_COLOR);
 
-    // --- 1. Panel Superior (Input y Botón) ---
-    JPanel topPanel = new JPanel();
-    topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-    topPanel.setBackground(BG_COLOR);
-    topPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        // --- 1. Panel Superior (Input y Botón) ---
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.setBackground(BG_COLOR);
+        topPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-    JLabel title = new JLabel("Buscar Personas", SwingConstants.CENTER);
-    title.setFont(new Font("SansSerif", Font.BOLD, 24));
-    title.setForeground(TEXT_COLOR);
-    title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel title = new JLabel("Buscar Personas", SwingConstants.CENTER);
+        title.setFont(new Font("SansSerif", Font.BOLD, 24));
+        title.setForeground(TEXT_COLOR);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-    // Asignación a la variable de INSTANCIA
-    txtSearchUser = styledTextField("Escribe un username...");
-    txtSearchUser.setMaximumSize(new Dimension(400, 40));
-    txtSearchUser.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Asignación a la variable de INSTANCIA
+        txtSearchUser = styledTextField("Escribe un username...");
+        txtSearchUser.setMaximumSize(new Dimension(400, 40));
+        txtSearchUser.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-    JButton btnSearch = styledButton("Buscar");
-    btnSearch.setAlignmentX(Component.CENTER_ALIGNMENT);
-    btnSearch.setMaximumSize(new Dimension(400, 40));
+        JButton btnSearch = styledButton("Buscar");
+        btnSearch.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnSearch.setMaximumSize(new Dimension(400, 40));
 
-    topPanel.add(title);
-    topPanel.add(Box.createVerticalStrut(20));
-    topPanel.add(txtSearchUser);
-    topPanel.add(Box.createVerticalStrut(10));
-    topPanel.add(btnSearch);
+        topPanel.add(title);
+        topPanel.add(Box.createVerticalStrut(20));
+        topPanel.add(txtSearchUser);
+        topPanel.add(Box.createVerticalStrut(10));
+        topPanel.add(btnSearch);
 
-    // --- 2. Panel de Resultados (Centro con Scroll) ---
-    // Asignación a la variable de INSTANCIA
-    resultsPanel = new JPanel();
-    resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
-    resultsPanel.setBackground(BG_COLOR);
+        // --- 2. Panel de Resultados (Centro con Scroll) ---
+        // Asignación a la variable de INSTANCIA
+        resultsPanel = new JPanel();
+        resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
+        resultsPanel.setBackground(BG_COLOR);
 
-    JScrollPane scrollResults = new JScrollPane(resultsPanel);
-    scrollResults.setBorder(null);
-    scrollResults.getVerticalScrollBar().setBackground(BG_COLOR);
-    scrollResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        JScrollPane scrollResults = new JScrollPane(resultsPanel);
+        scrollResults.setBorder(null);
+        scrollResults.getVerticalScrollBar().setBackground(BG_COLOR);
+        scrollResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-    // Acción del Botón Buscar
-    btnSearch.addActionListener(e -> {
-        String texto = txtSearchUser.getText().trim();
-        if (texto.isEmpty() || texto.equals("Escribe un username...")) {
-            JOptionPane.showMessageDialog(this, "Escribe algo para buscar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // 1. Limpiar resultados anteriores
-        resultsPanel.removeAll();
-
-        // 2. Buscar en el UserManager
-        List<User> encontrados = userManager.searchUsers(texto);
-
-        if (encontrados.isEmpty()) {
-            JLabel lblNo = new JLabel("No se encontraron usuarios con: " + texto);
-            lblNo.setForeground(Color.GRAY);
-            lblNo.setAlignmentX(Component.CENTER_ALIGNMENT);
-            resultsPanel.add(lblNo);
-        } else {
-            // 3. Llenar la lista
-            for (User u : encontrados) {
-                // Determinar estado (LO SIGO / NO LO SIGUES)
-                String estado = loggedUser.isFollowing(u.getUsername()) ? "LO SIGO" : "NO LO SIGUES";
-                String textoResultado = u.getUsername() + " – " + estado;
-
-                // Crear un botón o panel clicable para el resultado
-                JButton itemBtn = new JButton(textoResultado);
-                itemBtn.setFont(new Font("SansSerif", Font.PLAIN, 16));
-                itemBtn.setForeground(TEXT_COLOR);
-                itemBtn.setBackground(INPUT_BG);
-                itemBtn.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                itemBtn.setMaximumSize(new Dimension(400, 50));
-                itemBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-                itemBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                itemBtn.setFocusPainted(false);
-
-                // Al hacer clic, ir al perfil
-                itemBtn.addActionListener(ev -> {
-                    // Navega a la vista de perfil (usando el CardLayout interno)
-                    mostrarPerfil(u);
-                });
-
-                resultsPanel.add(itemBtn);
-                resultsPanel.add(Box.createVerticalStrut(10)); // Espacio entre items
+        // Acción del Botón Buscar
+        btnSearch.addActionListener(e -> {
+            String texto = txtSearchUser.getText().trim();
+            if (texto.isEmpty() || texto.equals("Escribe un username...")) {
+                JOptionPane.showMessageDialog(this, "Escribe algo para buscar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        }
 
-        resultsPanel.revalidate();
-        resultsPanel.repaint();
-    });
+            // 1. Limpiar resultados anteriores
+            resultsPanel.removeAll();
 
-    searchInputView.add(topPanel, BorderLayout.NORTH);
-    searchInputView.add(scrollResults, BorderLayout.CENTER);
+            // 2. Buscar en el UserManager
+            List<User> encontrados = userManager.searchUsers(texto);
 
-    return searchInputView;
-}
+            if (encontrados.isEmpty()) {
+                JLabel lblNo = new JLabel("No se encontraron usuarios con: " + texto);
+                lblNo.setForeground(Color.GRAY);
+                lblNo.setAlignmentX(Component.CENTER_ALIGNMENT);
+                resultsPanel.add(lblNo);
+            } else {
+                // 3. Llenar la lista
+                for (User u : encontrados) {
+                    // Determinar estado (LO SIGO / NO LO SIGUES)
+                    String estado = loggedUser.isFollowing(u.getUsername()) ? "LO SIGO" : "NO LO SIGUES";
+                    String textoResultado = u.getUsername() + " – " + estado;
+
+                    // Crear un botón o panel clicable para el resultado
+                    JButton itemBtn = new JButton(textoResultado);
+                    itemBtn.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                    itemBtn.setForeground(TEXT_COLOR);
+                    itemBtn.setBackground(INPUT_BG);
+                    itemBtn.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                    itemBtn.setMaximumSize(new Dimension(400, 50));
+                    itemBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    itemBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    itemBtn.setFocusPainted(false);
+
+                    // Al hacer clic, ir al perfil
+                    itemBtn.addActionListener(ev -> {
+                        // Navega a la vista de perfil (usando el CardLayout interno)
+                        mostrarPerfil(u);
+                    });
+
+                    resultsPanel.add(itemBtn);
+                    resultsPanel.add(Box.createVerticalStrut(10)); // Espacio entre items
+                }
+            }
+
+            resultsPanel.revalidate();
+            resultsPanel.repaint();
+        });
+
+        searchInputView.add(topPanel, BorderLayout.NORTH);
+        searchInputView.add(scrollResults, BorderLayout.CENTER);
+
+        return searchInputView;
+    }
 
 // 💡 Debes crear este nuevo método auxiliar:
 // private JPanel crearSearchInputView() { /* Devuelve el contenido de tu antiguo crearProfileCardSearch */ }
-
     // Tarjeta inicial para la búsqueda de perfiles (EXISTENTE)
     // Reemplaza tu método crearProfileCardSearch() con este:
     private JPanel crearProfileCardSearch() {
         JPanel searchPanel = new JPanel(new BorderLayout());
         searchPanel.setBackground(BG_COLOR);
-        
 
         // --- 1. Panel Superior (Input y Botón) ---
         JPanel topPanel = new JPanel();
@@ -1477,197 +1407,194 @@ private JPanel crearSearchInputView() {
 
         return searchPanel;
     }
-    
+
     /**
- * Restaura la vista de búsqueda a su estado inicial: limpio y listo para buscar.
- */
-private void mostrarPanelDeBusqueda() {
-    // 1. 🚨 CRÍTICO: Navegar al estado de búsqueda dentro del CardLayout anidado
-    if (profileCardContainer != null) {
-        CardLayout clProfile = (CardLayout) profileCardContainer.getLayout();
-        // Le decimos al contenedor interno que muestre la interfaz de búsqueda.
-        clProfile.show(profileCardContainer, "SEARCH_INPUT"); 
+     * Restaura la vista de búsqueda a su estado inicial: limpio y listo para
+     * buscar.
+     */
+    private void mostrarPanelDeBusqueda() {
+        // 1. 🚨 CRÍTICO: Navegar al estado de búsqueda dentro del CardLayout anidado
+        if (profileCardContainer != null) {
+            CardLayout clProfile = (CardLayout) profileCardContainer.getLayout();
+            // Le decimos al contenedor interno que muestre la interfaz de búsqueda.
+            clProfile.show(profileCardContainer, "SEARCH_INPUT");
 
-        // 2. Limpiar el área de resultados (si está en la tarjeta SEARCH_INPUT)
-        if (resultsPanel != null) {
-            resultsPanel.removeAll();
-            
-            // Opcional: Agregar un mensaje de bienvenida si quieres que la pantalla no esté vacía.
-            JLabel lblWelcome = new JLabel("Escribe un nombre de usuario para empezar la búsqueda.");
-            lblWelcome.setForeground(Color.GRAY);
-            lblWelcome.setAlignmentX(Component.CENTER_ALIGNMENT);
-            resultsPanel.add(lblWelcome);
-            
-            // Limpiar el campo de texto
-            if (txtSearchUser != null) {
-                txtSearchUser.setText("Escribe un username..."); // Resetear el placeholder si es necesario
+            // 2. Limpiar el área de resultados (si está en la tarjeta SEARCH_INPUT)
+            if (resultsPanel != null) {
+                resultsPanel.removeAll();
+
+                // Opcional: Agregar un mensaje de bienvenida si quieres que la pantalla no esté vacía.
+                JLabel lblWelcome = new JLabel("Escribe un nombre de usuario para empezar la búsqueda.");
+                lblWelcome.setForeground(Color.GRAY);
+                lblWelcome.setAlignmentX(Component.CENTER_ALIGNMENT);
+                resultsPanel.add(lblWelcome);
+
+                // Limpiar el campo de texto
+                if (txtSearchUser != null) {
+                    txtSearchUser.setText("Escribe un username..."); // Resetear el placeholder si es necesario
+                }
+
+                resultsPanel.revalidate();
+                resultsPanel.repaint();
             }
-            
-            resultsPanel.revalidate();
-            resultsPanel.repaint();
+
+            profileCardContainer.revalidate();
+            profileCardContainer.repaint();
         }
-        
-        profileCardContainer.revalidate();
-        profileCardContainer.repaint();
     }
-}
 
 // Dentro de la clase InstagramProject:
-
 // Variables de instancia necesarias (declararlas al inicio de la clase):
+    public JPanel crearPanelBusqueda() {
+        JPanel mainSearchPanel = new JPanel(new BorderLayout());
+        mainSearchPanel.setBackground(BG_COLOR);
 
-public JPanel crearPanelBusqueda() {
-    JPanel mainSearchPanel = new JPanel(new BorderLayout());
-    mainSearchPanel.setBackground(BG_COLOR);
+        // Inicializar el CardLayout Contenedor
+        profileCardContainer = new JPanel(new CardLayout());
+        profileCardContainer.setBackground(BG_COLOR);
 
-    // Inicializar el CardLayout Contenedor
-    profileCardContainer = new JPanel(new CardLayout());
-    profileCardContainer.setBackground(BG_COLOR);
-    
-    // 1. Tarjeta de Búsqueda (SEARCH_INPUT)
-    JPanel searchInputPanel = createSearchInputPanel();
-    profileCardContainer.add(searchInputPanel, "SEARCH_INPUT");
+        // 1. Tarjeta de Búsqueda (SEARCH_INPUT)
+        JPanel searchInputPanel = createSearchInputPanel();
+        profileCardContainer.add(searchInputPanel, "SEARCH_INPUT");
 
-    // 2. Tarjeta de Vista de Perfil (PROFILE_VIEW)
-    // Ya la manejamos en mostrarPerfil(), pero la agregamos como placeholder.
-    profileCardContainer.add(new JPanel(), "PROFILE_VIEW"); 
-    
-    mainSearchPanel.add(profileCardContainer, BorderLayout.CENTER);
-    return mainSearchPanel;
-}
+        // 2. Tarjeta de Vista de Perfil (PROFILE_VIEW)
+        // Ya la manejamos en mostrarPerfil(), pero la agregamos como placeholder.
+        profileCardContainer.add(new JPanel(), "PROFILE_VIEW");
 
-// Dentro de la clase InstagramProject:
-
-private JPanel createSearchInputPanel() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
-    
-    // Panel Wrapper para centrar el formulario de búsqueda
-    JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    wrapper.setBackground(BG_COLOR);
-    wrapper.setBorder(new EmptyBorder(20, 0, 0, 0));
-    
-    JPanel searchBar = new JPanel(new BorderLayout(5, 0));
-    searchBar.setPreferredSize(new Dimension(500, 35));
-    searchBar.setMaximumSize(new Dimension(500, 35));
-    searchBar.setBackground(INPUT_BG);
-    searchBar.setBorder(new LineBorder(BORDER_COLOR, 1));
-    
-    // Campo de texto de búsqueda (Lo guardamos como variable de instancia)
-    txtSearchUser = new JTextField("Escribe un username...");
-    txtSearchUser.setBackground(INPUT_BG);
-    txtSearchUser.setForeground(TEXT_COLOR);
-    txtSearchUser.setCaretColor(TEXT_COLOR);
-    txtSearchUser.setBorder(new EmptyBorder(0, 10, 0, 10));
-    txtSearchUser.addFocusListener(new java.awt.event.FocusAdapter() {
-        public void focusGained(java.awt.event.FocusEvent evt) {
-            if (txtSearchUser.getText().equals("Escribe un username...")) {
-                txtSearchUser.setText("");
-            }
-        }
-        public void focusLost(java.awt.event.FocusEvent evt) {
-            if (txtSearchUser.getText().isEmpty()) {
-                txtSearchUser.setText("Escribe un username...");
-            }
-        }
-    });
-    
-    // Botón de búsqueda
-    JButton btnSearch = styledButton("Buscar");
-    btnSearch.setPreferredSize(new Dimension(100, 35));
-    btnSearch.setBackground(BTN_BLUE);
-    
-    // 🚨 Action: Llamar a la lógica de búsqueda
-    btnSearch.addActionListener(e -> performUserSearch(txtSearchUser.getText()));
-    
-    searchBar.add(txtSearchUser, BorderLayout.CENTER);
-    searchBar.add(btnSearch, BorderLayout.EAST);
-    wrapper.add(searchBar);
-    
-    panel.add(wrapper, BorderLayout.NORTH);
-
-    // Área de Resultados (Guardamos como variable de instancia)
-    resultsPanel = new JPanel();
-    resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
-    resultsPanel.setBackground(BG_COLOR);
-    resultsPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
-    
-    JScrollPane scrollResults = new JScrollPane(resultsPanel);
-    scrollResults.setBorder(null);
-    scrollResults.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    
-    panel.add(scrollResults, BorderLayout.CENTER);
-    
-    return panel;
-}
-
-// Dentro de la clase InstagramProject:
-
-private void performUserSearch(String query) {
-    if (query == null || query.trim().isEmpty() || query.trim().equals("Escribe un username...")) {
-        JOptionPane.showMessageDialog(this, "Ingresa un nombre de usuario válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
+        mainSearchPanel.add(profileCardContainer, BorderLayout.CENTER);
+        return mainSearchPanel;
     }
-    
-    resultsPanel.removeAll();
-    
-    // 1. LLAMADA CRÍTICA: Buscar usuarios en el manager
-    // Usamos el manager, que lee de la lista serializada de usuarios (users.dat)
-    List<User> foundUsers = userManager.searchUsers(query.trim());
-    
-    if (foundUsers.isEmpty()) {
-        JLabel lblNotFound = new JLabel("No se encontraron usuarios que coincidan con '" + query + "'.");
-        lblNotFound.setForeground(Color.RED);
-        lblNotFound.setAlignmentX(Component.CENTER_ALIGNMENT);
-        resultsPanel.add(lblNotFound);
-    } else {
-        // 2. Mostrar los resultados
-        for (User user : foundUsers) {
-            if (!user.getUsername().equals(loggedUser.getUsername())) { // No mostrar el usuario logueado
-                resultsPanel.add(createUserResultItem(user));
-                resultsPanel.add(Box.createVerticalStrut(10));
-            }
-        }
-    }
-    
-    resultsPanel.revalidate();
-    resultsPanel.repaint();
-}
 
 // Dentro de la clase InstagramProject:
+    private JPanel createSearchInputPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-private JPanel createUserResultItem(User user) {
-    JPanel item = new JPanel(new BorderLayout(10, 5));
-    item.setBackground(POST_BG);
-    item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
-    item.setMaximumSize(new Dimension(500, 60)); 
-    
-    // Foto
-    JLabel lblPhoto = new JLabel(cargarImagenCuadrada(user.getFotoPath(), 40));
-    lblPhoto.setBorder(new EmptyBorder(5, 5, 5, 5));
-    item.add(lblPhoto, BorderLayout.WEST);
-    
-    // Info
-    JLabel lblInfo = new JLabel("<html><b>@" + user.getUsername() + "</b><br>" + user.getNombre() + "</html>");
-    lblInfo.setForeground(TEXT_COLOR);
-    item.add(lblInfo, BorderLayout.CENTER);
-    
-    // Botón Ver Perfil
-    JButton btnView = styledButton("Ver Perfil");
-    btnView.setPreferredSize(new Dimension(100, 30));
-    btnView.addActionListener(e -> {
-        // Navegar a la vista del perfil del usuario encontrado
-        mostrarPerfil(user); 
-        // mostrarPerfil ya se encarga de cambiar el CardLayout interno a "PROFILE_VIEW"
-    });
-    
-    JPanel btnWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    btnWrapper.setBackground(POST_BG);
-    btnWrapper.add(btnView);
-    item.add(btnWrapper, BorderLayout.EAST);
-    
-    return item;
-}
+        // Panel Wrapper para centrar el formulario de búsqueda
+        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        wrapper.setBackground(BG_COLOR);
+        wrapper.setBorder(new EmptyBorder(20, 0, 0, 0));
+
+        JPanel searchBar = new JPanel(new BorderLayout(5, 0));
+        searchBar.setPreferredSize(new Dimension(500, 35));
+        searchBar.setMaximumSize(new Dimension(500, 35));
+        searchBar.setBackground(INPUT_BG);
+        searchBar.setBorder(new LineBorder(BORDER_COLOR, 1));
+
+        // Campo de texto de búsqueda (Lo guardamos como variable de instancia)
+        txtSearchUser = new JTextField("Escribe un username...");
+        txtSearchUser.setBackground(INPUT_BG);
+        txtSearchUser.setForeground(TEXT_COLOR);
+        txtSearchUser.setCaretColor(TEXT_COLOR);
+        txtSearchUser.setBorder(new EmptyBorder(0, 10, 0, 10));
+        txtSearchUser.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (txtSearchUser.getText().equals("Escribe un username...")) {
+                    txtSearchUser.setText("");
+                }
+            }
+
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (txtSearchUser.getText().isEmpty()) {
+                    txtSearchUser.setText("Escribe un username...");
+                }
+            }
+        });
+
+        // Botón de búsqueda
+        JButton btnSearch = styledButton("Buscar");
+        btnSearch.setPreferredSize(new Dimension(100, 35));
+        btnSearch.setBackground(BTN_BLUE);
+
+        // 🚨 Action: Llamar a la lógica de búsqueda
+        btnSearch.addActionListener(e -> performUserSearch(txtSearchUser.getText()));
+
+        searchBar.add(txtSearchUser, BorderLayout.CENTER);
+        searchBar.add(btnSearch, BorderLayout.EAST);
+        wrapper.add(searchBar);
+
+        panel.add(wrapper, BorderLayout.NORTH);
+
+        // Área de Resultados (Guardamos como variable de instancia)
+        resultsPanel = new JPanel();
+        resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
+        resultsPanel.setBackground(BG_COLOR);
+        resultsPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
+
+        JScrollPane scrollResults = new JScrollPane(resultsPanel);
+        scrollResults.setBorder(null);
+        scrollResults.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        panel.add(scrollResults, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+// Dentro de la clase InstagramProject:
+    private void performUserSearch(String query) {
+        if (query == null || query.trim().isEmpty() || query.trim().equals("Escribe un username...")) {
+            JOptionPane.showMessageDialog(this, "Ingresa un nombre de usuario válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        resultsPanel.removeAll();
+
+        // 1. LLAMADA CRÍTICA: Buscar usuarios en el manager
+        // Usamos el manager, que lee de la lista serializada de usuarios (users.dat)
+        List<User> foundUsers = userManager.searchUsers(query.trim());
+
+        if (foundUsers.isEmpty()) {
+            JLabel lblNotFound = new JLabel("No se encontraron usuarios que coincidan con '" + query + "'.");
+            lblNotFound.setForeground(Color.RED);
+            lblNotFound.setAlignmentX(Component.CENTER_ALIGNMENT);
+            resultsPanel.add(lblNotFound);
+        } else {
+            // 2. Mostrar los resultados
+            for (User user : foundUsers) {
+                if (!user.getUsername().equals(loggedUser.getUsername())) { // No mostrar el usuario logueado
+                    resultsPanel.add(createUserResultItem(user));
+                    resultsPanel.add(Box.createVerticalStrut(10));
+                }
+            }
+        }
+
+        resultsPanel.revalidate();
+        resultsPanel.repaint();
+    }
+
+// Dentro de la clase InstagramProject:
+    private JPanel createUserResultItem(User user) {
+        JPanel item = new JPanel(new BorderLayout(10, 5));
+        item.setBackground(POST_BG);
+        item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
+        item.setMaximumSize(new Dimension(500, 60));
+
+        // Foto
+        JLabel lblPhoto = new JLabel(cargarImagenCuadrada(user.getFotoPath(), 40));
+        lblPhoto.setBorder(new EmptyBorder(5, 5, 5, 5));
+        item.add(lblPhoto, BorderLayout.WEST);
+
+        // Info
+        JLabel lblInfo = new JLabel("<html><b>@" + user.getUsername() + "</b><br>" + user.getNombre() + "</html>");
+        lblInfo.setForeground(TEXT_COLOR);
+        item.add(lblInfo, BorderLayout.CENTER);
+
+        // Botón Ver Perfil
+        JButton btnView = styledButton("Ver Perfil");
+        btnView.setPreferredSize(new Dimension(100, 30));
+        btnView.addActionListener(e -> {
+            // Navegar a la vista del perfil del usuario encontrado
+            mostrarPerfil(user);
+            // mostrarPerfil ya se encarga de cambiar el CardLayout interno a "PROFILE_VIEW"
+        });
+
+        JPanel btnWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnWrapper.setBackground(POST_BG);
+        btnWrapper.add(btnView);
+        item.add(btnWrapper, BorderLayout.EAST);
+
+        return item;
+    }
 
     private void mostrarPerfil(User targetUser) {
         // Eliminar vistas anteriores y añadir la nueva
@@ -1704,48 +1631,18 @@ private JPanel createUserResultItem(User user) {
 
     // --- Método de Utilidad: cargarImagenCuadrada (Añadir a InstagramProject) ---
 // Es vital para mostrar fotos de perfil y posts.
-
-private ImageIcon cargarImagenCuadrada(String path, int size) {
-    // 1. Manejar la ruta (por ejemplo, si se guarda solo el nombre del archivo)
-    File imgFile = new File(path);
-
-    // 2. Si el archivo no existe o la ruta es inválida, usar placeholder (por ejemplo: default_user.png)
-    if (!imgFile.exists() || path == null || path.isEmpty()) {
-        imgFile = new File("default_user.png"); // Asegúrate de tener este archivo en la raíz
-    }
-
-    try {
-        BufferedImage originalImage = ImageIO.read(imgFile);
-        if (originalImage == null) {
-            // Si ImageIO no pudo leerlo, puede ser que el archivo no sea una imagen válida
-            return null;
+    private ImageIcon cargarImagenCuadrada(String fileName, int size) {
+        File imgFile = new File(fileName);
+        if (!imgFile.exists()) {
+            imgFile = new File(System.getProperty("user.dir") + File.separator + fileName);
         }
-
-        // 3. Redimensionar para que encaje en el cuadrado
-        Image scaledImage = originalImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
-        
-        // 4. (Opcional, pero recomendado) Crear un borde circular para fotos de perfil si size es pequeño
-        if (size <= 50) {
-            BufferedImage circleImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = circleImage.createGraphics();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            
-            // Dibujar un círculo
-            g2.setClip(new Ellipse2D.Float(0, 0, size, size));
-            g2.drawImage(scaledImage, 0, 0, null);
-            g2.dispose();
-            return new ImageIcon(circleImage);
+        if (!imgFile.exists()) {
+            return new ImageIcon(new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB));
         }
-
-        return new ImageIcon(scaledImage);
-
-    } catch (IOException e) {
-        System.err.println("❌ ERROR: Imagen no encontrada en la ruta: " + path);
-        e.printStackTrace();
-        // Retorna null o un icono de error
-        return null; 
+        ImageIcon icon = new ImageIcon(imgFile.getAbsolutePath());
+        Image img = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
     }
-}
 
     /**
      * Construye la vista completa de un perfil (similar al diseño de
@@ -1824,8 +1721,8 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
         // Posts
         // CORREGIDO: Llama al método que carga los posts del .ins
 // Asumiendo que has implementado loadPostsFromLocalFile(username) en UserManager
-    int postCount = userManager.loadPostsFromLocalFile(targetUser.getUsername()).size();
-    statsPanel.add(createStatPanel(String.valueOf(postCount), "publicaciones"));
+        int postCount = userManager.loadPostsFromLocalFile(targetUser.getUsername()).size();
+        statsPanel.add(createStatPanel(String.valueOf(postCount), "publicaciones"));
         statsPanel.add(Box.createHorizontalStrut(30));
         // Followers
         statsPanel.add(createStatPanel(String.valueOf(targetUser.getFollowers().size()), "seguidores"));
@@ -1962,19 +1859,18 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
 // --- Método de Recarga en tu Clase Principal ---
 // --- Método de Recarga en tu Clase Principal ---
     public void rebuildMainFeed() {
-        
+
         if (loggedUser != null) {
-        // Obtenemos la versión más reciente del usuario (con listas de seguidos actualizadas)
-        // La implementación de userManager.getUserByUsername() fuerza la recarga desde el archivo.
-        loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
-    } else {
-        // Si loggedUser es NULL, no tiene sentido recargar el feed aún
-        // y loadFeedPosts ya mostrará el mensaje de login.
-    }
-        
+            // Obtenemos la versión más reciente del usuario (con listas de seguidos actualizadas)
+            // La implementación de userManager.getUserByUsername() fuerza la recarga desde el archivo.
+            loggedUser = userManager.getUserByUsername(loggedUser.getUsername());
+        } else {
+            // Si loggedUser es NULL, no tiene sentido recargar el feed aún
+            // y loadFeedPosts ya mostrará el mensaje de login.
+        }
+
         // 1. Buscar el JScrollPane dentro del mainPanel (CardLayout)
         JScrollPane scrollPane = (JScrollPane) getComponentByName(mainPanel, "FEED_SCROLL_PANE");
-        
 
         if (scrollPane == null) {
             System.err.println("Error: El JScrollPane del feed ('FEED_SCROLL_PANE') no fue encontrado en mainPanel.");
@@ -2003,15 +1899,15 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
 
         mainPanel.revalidate();
         mainPanel.repaint();
-        
+
         if (scrollPane != null) {
-        // Obtener la barra de desplazamiento vertical
-        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
-        
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            verticalScrollBar.setValue(0);
-        });
-    }
+            // Obtener la barra de desplazamiento vertical
+            JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                verticalScrollBar.setValue(0);
+            });
+        }
     }
 
 // --- Asegúrate de tener este método auxiliar ---
@@ -2102,7 +1998,7 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
         navLinks.add(createSidebarButton("🔍 Búsqueda", "PROFILE_SEARCH"));
         navLinks.add(createSidebarButton("✨ Crear", "CREATE_POST"));
         navLinks.add(createSidebarButton("🔔 Notificaciones", "NOTIFICATIONS"));
-        navLinks.add(createSidebarButton("🔎 Buscar Hashtag", "HASHTAG_SEARCH")); 
+        navLinks.add(createSidebarButton("🔎 Buscar Hashtag", "HASHTAG_SEARCH"));
         navLinks.add(createSidebarButton("👤 Perfil", "MY_PROFILE"));
 
         navLinks.add(Box.createVerticalGlue()); // Empuja el resto hacia abajo
@@ -2129,105 +2025,104 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
         btn.setMargin(new Insets(10, 0, 10, 0)); // Padding vertical
 
         btn.addActionListener(e -> {
-    // Referencia al CardLayout del contenido central
-    CardLayout clCenter = (CardLayout) centerContentPanel.getLayout(); 
+            // Referencia al CardLayout del contenido central
+            CardLayout clCenter = (CardLayout) centerContentPanel.getLayout();
 
-    if (cardName.equals("LOGOUT")) {
-        // --- CASO 1: LOGOUT (Usa el CardLayout GLOBAL) ---
-        int opt = JOptionPane.showConfirmDialog(this, "¿Cerrar sesión?", "Confirmar Salida", JOptionPane.YES_NO_OPTION);
-        if (opt == JOptionPane.YES_OPTION) {
-            loggedUser = null;
-            // Navega del ROOT_VIEW al LOGIN (usando el CardLayout global)
-            cardLayout.show(mainPanel, "LOGIN"); 
-        }
-    } else {
-        // --- CASO 2: Navegación de Contenido (Usa el CardLayout CENTRAL) ---
-        
-        // Antes de navegar, asegúrate de estar en la vista ROOT_VIEW si no lo estás.
-        // Esto solo es necesario si se saliera de ROOT_VIEW sin hacer logout, pero por seguridad:
-        cardLayout.show(mainPanel, "ROOT_VIEW");
-        
-        if (loggedUser == null) {
-            JOptionPane.showMessageDialog(this, "Debes iniciar sesión para acceder.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+            if (cardName.equals("LOGOUT")) {
+                // --- CASO 1: LOGOUT (Usa el CardLayout GLOBAL) ---
+                int opt = JOptionPane.showConfirmDialog(this, "¿Cerrar sesión?", "Confirmar Salida", JOptionPane.YES_NO_OPTION);
+                if (opt == JOptionPane.YES_OPTION) {
+                    loggedUser = null;
+                    // Navega del ROOT_VIEW al LOGIN (usando el CardLayout global)
+                    cardLayout.show(mainPanel, "LOGIN");
+                }
+            } else {
+                // --- CASO 2: Navegación de Contenido (Usa el CardLayout CENTRAL) ---
 
-        if (cardName.equals("MAIN")) {
-            // Lógica de INICIO (FEED): Recarga y Navega al Feed.
-            rebuildMainFeed();
-            clCenter.show(centerContentPanel, "MAIN"); 
-            
-        } else if (cardName.equals("MY_PROFILE")) {
-            if (loggedUser != null) {
-                // La navegación DEBE usar el CardLayout CENTRAL (clCenter)
+                // Antes de navegar, asegúrate de estar en la vista ROOT_VIEW si no lo estás.
+                // Esto solo es necesario si se saliera de ROOT_VIEW sin hacer logout, pero por seguridad:
+                cardLayout.show(mainPanel, "ROOT_VIEW");
 
-                // 1. Navegar al contenedor de perfil (asumiendo que es PROFILE_SEARCH)
-                clCenter.show(centerContentPanel, "PROFILE_SEARCH");
+                if (loggedUser == null) {
+                    JOptionPane.showMessageDialog(this, "Debes iniciar sesión para acceder.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-                // 2. Cargar y mostrar tu perfil. 
-                // Esta función DEBE actualizar el contenido del panel PROFILE_SEARCH.
-                mostrarPerfil(loggedUser);
+                if (cardName.equals("MAIN")) {
+                    // Lógica de INICIO (FEED): Recarga y Navega al Feed.
+                    rebuildMainFeed();
+                    clCenter.show(centerContentPanel, "MAIN");
 
+                } else if (cardName.equals("MY_PROFILE")) {
+                    if (loggedUser != null) {
+                        // La navegación DEBE usar el CardLayout CENTRAL (clCenter)
+
+                        // 1. Navegar al contenedor de perfil (asumiendo que es PROFILE_SEARCH)
+                        clCenter.show(centerContentPanel, "PROFILE_SEARCH");
+
+                        // 2. Cargar y mostrar tu perfil. 
+                        // Esta función DEBE actualizar el contenido del panel PROFILE_SEARCH.
+                        mostrarPerfil(loggedUser);
+
+                        centerContentPanel.revalidate();
+                        centerContentPanel.repaint();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                    // ... (dentro del ActionListener del botón de la Sidebar, en la sección 'else' para navegación)
+                } else if (cardName.equals("PROFILE_SEARCH")) {
+                    if (loggedUser != null) {
+
+                        // 1. 🚨 ¡CRÍTICO! LLAMAR AL RESET AQUÍ
+                        mostrarPanelDeBusqueda(); // <--- Limpia resultados y campo (Asumimos que este método existe)
+
+                        // 2. Navegar a la tarjeta contenedora
+                        clCenter.show(centerContentPanel, "PROFILE_SEARCH");
+
+                        centerContentPanel.revalidate();
+                        centerContentPanel.repaint();
+                    }
+                } else if (cardName.equals("NOTIFICATIONS")) { // 🚨 NUEVO CASO: NOTIFICACIONES
+                    if (loggedUser != null) {
+
+                        // 1. Navegar a la tarjeta
+                        clCenter.show(centerContentPanel, "NOTIFICATIONS");
+
+                        // 2. Cargar las menciones
+                        // 🚨 CORRECCIÓN: Llamamos al método loadNotifications() sin argumentos. 
+                        // Este método accede a notificationsListPanel (variable de instancia) 
+                        // y actualiza su contenido internamente.
+                        loadNotifications();
+
+                        // La revalidación del contenedor principal es suficiente
+                        centerContentPanel.revalidate();
+                        centerContentPanel.repaint();
+                    }
+                    // Opcional: Si no hay usuario logueado, mostrar el mensaje de inicio de sesión.
+                    // else {
+                    //     // Lógica para mostrar la vista de Login o un mensaje de error
+                    // }
+                } else if (cardName.equals("HASHTAG_SEARCH")) { // 🚨 NUEVO CASO: BÚSQUEDA DE HASHTAG
+                    // Asumimos que la lógica de reinicio está en mostrarPanelHashtagSearch()
+                    crearPanelHashtagSearchContent();
+                    clCenter.show(centerContentPanel, "HASHTAG_SEARCH");
+
+                } else if (cardName.equals("CREATE_POST")) {
+                    // Navegación normal para "CREATE_POST" (no requiere recarga de datos)
+                    clCenter.show(centerContentPanel, "CREATE_POST");
+
+                } else {
+                    // CASO POR DEFECTO: Si es una tarjeta simple (ej. HASHTAG_SEARCH o CREATE_POST)
+                    // Y no requiere recarga especial, esta línea lo cubre (pero es más seguro ser explícito).
+                    clCenter.show(centerContentPanel, cardName);
+                }
+
+                // Se requiere forzar la actualización para layouts complejos o redibujo de scrollpanes
                 centerContentPanel.revalidate();
                 centerContentPanel.repaint();
-            } else {
-                JOptionPane.showMessageDialog(this, "Debes iniciar sesión primero.", "Error", JOptionPane.ERROR_MESSAGE);
             }
-            
-        // ... (dentro del ActionListener del botón de la Sidebar, en la sección 'else' para navegación)
-
-    } else if (cardName.equals("PROFILE_SEARCH")) {
-        if (loggedUser != null) {
-            
-            // 1. 🚨 ¡CRÍTICO! LLAMAR AL RESET AQUÍ
-            mostrarPanelDeBusqueda(); // <--- Limpia resultados y campo (Asumimos que este método existe)
-            
-            // 2. Navegar a la tarjeta contenedora
-            clCenter.show(centerContentPanel, "PROFILE_SEARCH"); 
-            
-            centerContentPanel.revalidate();
-            centerContentPanel.repaint();
-        }
-    } else if (cardName.equals("NOTIFICATIONS")) { // 🚨 NUEVO CASO: NOTIFICACIONES
-    if (loggedUser != null) {
-        
-        // 1. Navegar a la tarjeta
-        clCenter.show(centerContentPanel, "NOTIFICATIONS"); 
-        
-        // 2. Cargar las menciones
-        // 🚨 CORRECCIÓN: Llamamos al método loadNotifications() sin argumentos. 
-        // Este método accede a notificationsListPanel (variable de instancia) 
-        // y actualiza su contenido internamente.
-        loadNotifications(); 
-        
-        // La revalidación del contenedor principal es suficiente
-        centerContentPanel.revalidate();
-        centerContentPanel.repaint();
-    } 
-    // Opcional: Si no hay usuario logueado, mostrar el mensaje de inicio de sesión.
-    // else {
-    //     // Lógica para mostrar la vista de Login o un mensaje de error
-    // }
-    } else if (cardName.equals("HASHTAG_SEARCH")) { // 🚨 NUEVO CASO: BÚSQUEDA DE HASHTAG
-        // Asumimos que la lógica de reinicio está en mostrarPanelHashtagSearch()
-        crearPanelHashtagSearchContent();
-        clCenter.show(centerContentPanel, "HASHTAG_SEARCH");
-        
-    } else if (cardName.equals("CREATE_POST")) {
-        // Navegación normal para "CREATE_POST" (no requiere recarga de datos)
-        clCenter.show(centerContentPanel, "CREATE_POST"); 
-        
-    } else {
-        // CASO POR DEFECTO: Si es una tarjeta simple (ej. HASHTAG_SEARCH o CREATE_POST)
-        // Y no requiere recarga especial, esta línea lo cubre (pero es más seguro ser explícito).
-        clCenter.show(centerContentPanel, cardName); 
-    }
-        
-        // Se requiere forzar la actualización para layouts complejos o redibujo de scrollpanes
-        centerContentPanel.revalidate();
-        centerContentPanel.repaint();
-    }
-});
+        });
 
         // Efecto hover sutil
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -2242,205 +2137,198 @@ private ImageIcon cargarImagenCuadrada(String path, int size) {
 
         return btn;
     }
-    
+
     private JPanel crearPanelHashtagSearchContent() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
 
-    // ❌ CRÍTICO: Eliminado cualquier llamada a crearSidebarDesktop() aquí.
-    // Este panel ya no incluye la sidebar.
+        // ❌ CRÍTICO: Eliminado cualquier llamada a crearSidebarDesktop() aquí.
+        // Este panel ya no incluye la sidebar.
+        // 1. Panel de Búsqueda (NORTH)
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        searchPanel.setBackground(POST_BG);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-    // 1. Panel de Búsqueda (NORTH)
-    JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-    searchPanel.setBackground(POST_BG);
-    searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JTextField txtHashtag = new JTextField(25);
+        txtHashtag.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        txtHashtag.setText("#Buscar"); // Placeholder
 
-    JTextField txtHashtag = new JTextField(25);
-    txtHashtag.setFont(new Font("SansSerif", Font.PLAIN, 16));
-    txtHashtag.setText("#Buscar"); // Placeholder
+        JButton btnSearch = styledButton("Buscar");
+        btnSearch.setPreferredSize(new Dimension(100, 30));
 
-    JButton btnSearch = styledButton("Buscar");
-    btnSearch.setPreferredSize(new Dimension(100, 30));
+        searchPanel.add(txtHashtag);
+        searchPanel.add(btnSearch);
 
-    searchPanel.add(txtHashtag);
-    searchPanel.add(btnSearch);
+        panel.add(searchPanel, BorderLayout.NORTH);
 
-    panel.add(searchPanel, BorderLayout.NORTH);
+        // 2. Área de Resultados (CENTER) - Usaremos un CardLayout interno
+        JPanel resultsContainer = new JPanel(new CardLayout());
+        resultsContainer.setBackground(BG_COLOR);
+        resultsContainer.setName("HASHTAG_RESULTS_CONTAINER");
 
-    // 2. Área de Resultados (CENTER) - Usaremos un CardLayout interno
-    JPanel resultsContainer = new JPanel(new CardLayout());
-    resultsContainer.setBackground(BG_COLOR);
-    resultsContainer.setName("HASHTAG_RESULTS_CONTAINER");
+        // Mensaje de inicio
+        JPanel defaultMessage = createMessagePanel("Ingresa un hashtag (ej: #viajes) para ver publicaciones.");
+        defaultMessage.setName("DEFAULT_MESSAGE");
+        resultsContainer.add(defaultMessage, "DEFAULT");
 
-    // Mensaje de inicio
-    JPanel defaultMessage = createMessagePanel("Ingresa un hashtag (ej: #viajes) para ver publicaciones.");
-    defaultMessage.setName("DEFAULT_MESSAGE");
-    resultsContainer.add(defaultMessage, "DEFAULT");
-    
-    // Panel para resultados (inicialmente vacío)
-    // ⚠️ Importante: resultsPanel debe tener un BorderLayout para que displayHashtagResults()
-    // pueda añadir el JScrollPane correctamente en BorderLayout.CENTER.
-    JPanel resultsPanel = new JPanel(new BorderLayout()); 
-    resultsPanel.setName("RESULTS_PANEL");
+        // Panel para resultados (inicialmente vacío)
+        // ⚠️ Importante: resultsPanel debe tener un BorderLayout para que displayHashtagResults()
+        // pueda añadir el JScrollPane correctamente en BorderLayout.CENTER.
+        JPanel resultsPanel = new JPanel(new BorderLayout());
+        resultsPanel.setName("RESULTS_PANEL");
 
-    resultsContainer.add(resultsPanel, "RESULTS");
+        resultsContainer.add(resultsPanel, "RESULTS");
 
-    panel.add(resultsContainer, BorderLayout.CENTER);
+        panel.add(resultsContainer, BorderLayout.CENTER);
 
-    // 3. Lógica del Botón de Búsqueda
-    btnSearch.addActionListener(e -> {
-        String input = txtHashtag.getText().trim();
-        if (input.isEmpty() || input.equals("#Buscar")) { // Evitar buscar el placeholder
-            JOptionPane.showMessageDialog(this, "Por favor, ingresa un hashtag válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Aseguramos que el hashtag empiece con '#' (si el usuario no lo puso)
-        String hashtag = input.startsWith("#") ? input : "#" + input; 
-        
-        // Ejecutar la búsqueda y mostrar los resultados
-        displayHashtagResults(hashtag, resultsContainer, resultsPanel);
-    });
-    
-    // Agregar listener para limpiar el placeholder al hacer click
-    txtHashtag.addFocusListener(new java.awt.event.FocusAdapter() {
-        @Override
-        public void focusGained(java.awt.event.FocusEvent evt) {
-            if (txtHashtag.getText().equals("#Buscar")) {
-                txtHashtag.setText("");
+        // 3. Lógica del Botón de Búsqueda
+        btnSearch.addActionListener(e -> {
+            String input = txtHashtag.getText().trim();
+            if (input.isEmpty() || input.equals("#Buscar")) { // Evitar buscar el placeholder
+                JOptionPane.showMessageDialog(this, "Por favor, ingresa un hashtag válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        }
-        @Override
-        public void focusLost(java.awt.event.FocusEvent evt) {
-            if (txtHashtag.getText().isEmpty()) {
-                txtHashtag.setText("#Buscar");
-            }
-        }
-    });
 
-    return panel;
-}
-    
-    /**
- * Busca y muestra todos los posts que contienen el hashtag especificado.
- */
-private void displayHashtagResults(String hashtagInput, JPanel container, JPanel resultsPanel) {
-    
-    // El hashtagInput puede venir con o sin el '#'.
-    // Aseguramos que el hashtag empiece con '#' (si el usuario no lo puso)
-    String hashtag = hashtagInput.startsWith("#") ? hashtagInput : "#" + hashtagInput; 
+            // Aseguramos que el hashtag empiece con '#' (si el usuario no lo puso)
+            String hashtag = input.startsWith("#") ? input : "#" + input;
 
-    // 1. OBTENER POSTS: DELEGAR la búsqueda al UserManager (Lógica de negocio)
-    // Usamos el método searchPostsByHashtag que ya maneja la iteración y los duplicados.
-    List<Post> foundPosts = userManager.searchPostsByHashtag(hashtag);
-
-    // 2. Limpieza y Configuración de la Vista
-    resultsPanel.removeAll();
-    CardLayout cl = (CardLayout) container.getLayout();
-    
-    // ** CRÍTICO **: Asegurar que resultsPanel tenga un LayoutManager para el JScrollPane.
-    // Usamos BorderLayout para que el JScrollPane ocupe todo el espacio.
-    // Esto debería haberse definido en crearPanelHashtagSearch(), pero lo forzamos aquí si es necesario:
-    if (!(resultsPanel.getLayout() instanceof BorderLayout)) {
-        resultsPanel.setLayout(new BorderLayout());
-    }
-    
-    if (foundPosts.isEmpty()) {
-        // Si no hay resultados, mostramos el mensaje de "NO_RESULTS"
-        JPanel noResults = createMessagePanel("No se encontraron publicaciones con el hashtag: " + hashtag);
-        
-        // Antes de añadir la nueva tarjeta, removemos cualquier tarjeta antigua con el mismo nombre para evitar conflictos
-        for (Component comp : container.getComponents()) {
-            if ("NO_RESULTS".equals(comp.getName())) {
-                container.remove(comp);
-            }
-        }
-        container.add(noResults, "NO_RESULTS");
-        cl.show(container, "NO_RESULTS");
-        
-    } else {
-        // Crear el panel de contenido para los posts
-        JPanel postsContainer = new JPanel();
-        postsContainer.setLayout(new BoxLayout(postsContainer, BoxLayout.Y_AXIS));
-        postsContainer.setBackground(BG_COLOR);
-        
-        int feedWidth = 550; // Mismo ancho que el feed principal
-        
-        // Iterar y agregar cada post al contenedor
-        for (Post post : foundPosts) {
-            JPanel postView = createPostFeedView(post, feedWidth); 
-            postsContainer.add(postView);
-            postsContainer.add(Box.createVerticalStrut(15)); // Espacio entre posts
-        }
-        
-        // Envolver el contenedor de posts en un JScrollPane
-        JScrollPane scrollPane = new JScrollPane(postsContainer);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(null);
-
-        // ** CRÍTICO **: Usar invokeLater para restablecer el scroll al inicio (como en rebuildMainFeed)
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            scrollPane.getVerticalScrollBar().setValue(0);
+            // Ejecutar la búsqueda y mostrar los resultados
+            displayHashtagResults(hashtag, resultsContainer, resultsPanel);
         });
 
-        // Agregar el JScrollPane al resultsPanel (que tiene BorderLayout)
-        resultsPanel.add(scrollPane, BorderLayout.CENTER); 
-        
-        cl.show(container, "RESULTS");
+        // Agregar listener para limpiar el placeholder al hacer click
+        txtHashtag.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (txtHashtag.getText().equals("#Buscar")) {
+                    txtHashtag.setText("");
+                }
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (txtHashtag.getText().isEmpty()) {
+                    txtHashtag.setText("#Buscar");
+                }
+            }
+        });
+
+        return panel;
     }
-    
-    // Forzar el repintado y recálculo de layouts
-    container.revalidate();
-    container.repaint();
-}
+
+    /**
+     * Busca y muestra todos los posts que contienen el hashtag especificado.
+     */
+    private void displayHashtagResults(String hashtagInput, JPanel container, JPanel resultsPanel) {
+
+        // El hashtagInput puede venir con o sin el '#'.
+        // Aseguramos que el hashtag empiece con '#' (si el usuario no lo puso)
+        String hashtag = hashtagInput.startsWith("#") ? hashtagInput : "#" + hashtagInput;
+
+        // 1. OBTENER POSTS: DELEGAR la búsqueda al UserManager (Lógica de negocio)
+        // Usamos el método searchPostsByHashtag que ya maneja la iteración y los duplicados.
+        List<Post> foundPosts = userManager.searchPostsByHashtag(hashtag);
+
+        // 2. Limpieza y Configuración de la Vista
+        resultsPanel.removeAll();
+        CardLayout cl = (CardLayout) container.getLayout();
+
+        // ** CRÍTICO **: Asegurar que resultsPanel tenga un LayoutManager para el JScrollPane.
+        // Usamos BorderLayout para que el JScrollPane ocupe todo el espacio.
+        // Esto debería haberse definido en crearPanelHashtagSearch(), pero lo forzamos aquí si es necesario:
+        if (!(resultsPanel.getLayout() instanceof BorderLayout)) {
+            resultsPanel.setLayout(new BorderLayout());
+        }
+
+        if (foundPosts.isEmpty()) {
+            // Si no hay resultados, mostramos el mensaje de "NO_RESULTS"
+            JPanel noResults = createMessagePanel("No se encontraron publicaciones con el hashtag: " + hashtag);
+
+            // Antes de añadir la nueva tarjeta, removemos cualquier tarjeta antigua con el mismo nombre para evitar conflictos
+            for (Component comp : container.getComponents()) {
+                if ("NO_RESULTS".equals(comp.getName())) {
+                    container.remove(comp);
+                }
+            }
+            container.add(noResults, "NO_RESULTS");
+            cl.show(container, "NO_RESULTS");
+
+        } else {
+            // Crear el panel de contenido para los posts
+            JPanel postsContainer = new JPanel();
+            postsContainer.setLayout(new BoxLayout(postsContainer, BoxLayout.Y_AXIS));
+            postsContainer.setBackground(BG_COLOR);
+
+            int feedWidth = 550; // Mismo ancho que el feed principal
+
+            // Iterar y agregar cada post al contenedor
+            for (Post post : foundPosts) {
+                JPanel postView = createPostFeedView(post, feedWidth);
+                postsContainer.add(postView);
+                postsContainer.add(Box.createVerticalStrut(15)); // Espacio entre posts
+            }
+
+            // Envolver el contenedor de posts en un JScrollPane
+            JScrollPane scrollPane = new JScrollPane(postsContainer);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setBorder(null);
+
+            // ** CRÍTICO **: Usar invokeLater para restablecer el scroll al inicio (como en rebuildMainFeed)
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                scrollPane.getVerticalScrollBar().setValue(0);
+            });
+
+            // Agregar el JScrollPane al resultsPanel (que tiene BorderLayout)
+            resultsPanel.add(scrollPane, BorderLayout.CENTER);
+
+            cl.show(container, "RESULTS");
+        }
+
+        // Forzar el repintado y recálculo de layouts
+        container.revalidate();
+        container.repaint();
+    }
 // Dentro de la clase InstagramProject
 
-private void attemptPublish(String caption, String imagePath) {
-    if (loggedUser == null) {
-        JOptionPane.showMessageDialog(this, "Debe iniciar sesión para publicar.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
+    private void attemptPublish(String caption, String imagePath) {
+        if (loggedUser == null) {
+            JOptionPane.showMessageDialog(this, "Debe iniciar sesión para publicar.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (imagePath.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe seleccionar una imagen.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        Post newPost = new Post(
+                loggedUser.getUsername(),
+                new File(imagePath).getName(),
+                caption
+        );
+        try {
+            File destino = new File(System.getProperty("user.dir") + File.separator + new File(imagePath).getName());
+            Files.copy(new File(imagePath).toPath(), destino.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            userManager.publishPost(newPost);
+            JOptionPane.showMessageDialog(this, "Publicación exitosa!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error de persistencia al guardar el post:\n" + e.getMessage(), "Error de I/O", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-    if (imagePath.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Debe seleccionar una imagen.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-    
-    // Crear el objeto Post
-    Post newPost = new Post(
-        loggedUser.getUsername(),
-        imagePath,
-        caption
-    );
-    // Nota: El constructor de Post establece automáticamente la fecha actual (LocalDateTime.now()).
-    
-    try {
-        // Llama al método de persistencia híbrida
-        userManager.publishPost(newPost);
-        
-        JOptionPane.showMessageDialog(this, "Publicación exitosa!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-        
-    } catch (IOException e) {
-        JOptionPane.showMessageDialog(this, 
-            "Error de persistencia al guardar el post:\n" + e.getMessage(), 
-            "Error de I/O", JOptionPane.ERROR_MESSAGE);
-    } catch (IllegalArgumentException e) {
-        JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    }
-}
 
-/**
- * Método auxiliar para crear un panel con mensaje centrado.
- */
-private JPanel createMessagePanel(String message) {
-    JPanel panel = new JPanel(new GridBagLayout());
-    panel.setBackground(BG_COLOR);
-    JLabel lbl = new JLabel(message);
-    lbl.setForeground(Color.GRAY);
-    lbl.setFont(new Font("SansSerif", Font.ITALIC, 16));
-    panel.add(lbl);
-    return panel;
-}
+    /**
+     * Método auxiliar para crear un panel con mensaje centrado.
+     */
+    private JPanel createMessagePanel(String message) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BG_COLOR);
+        JLabel lbl = new JLabel(message);
+        lbl.setForeground(Color.GRAY);
+        lbl.setFont(new Font("SansSerif", Font.ITALIC, 16));
+        panel.add(lbl);
+        return panel;
+    }
 
     // Helper para crear etiquetas de detalle de perfil (EXISTENTE)
     private JLabel createDetailLabel(String text) {
@@ -2583,102 +2471,99 @@ private JPanel createMessagePanel(String message) {
         rb.setFont(new Font("SansSerif", Font.PLAIN, 14));
         rb.setFocusPainted(false);
     }
-    
-    // Dentro de la clase InstagramProject:
 
-private JPanel crearPanelNotificacionesContent() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_COLOR);
-    
-    JLabel title = new JLabel("🔔 Notificaciones (Menciones)", SwingConstants.CENTER);
-    title.setFont(new Font("SansSerif", Font.BOLD, 24));
-    title.setForeground(TEXT_COLOR);
-    title.setBorder(new EmptyBorder(15, 0, 15, 0));
-    panel.add(title, BorderLayout.NORTH);
-    
-    // Panel central que contendrá la lista de notificaciones (scrollable)
-    JPanel listPanel = new JPanel();
-    listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-    listPanel.setBackground(BG_COLOR);
-    listPanel.setAlignmentX(Component.CENTER_ALIGNMENT); 
-    listPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
-    
-    JScrollPane scrollPane = new JScrollPane(listPanel);
-    scrollPane.setBorder(null);
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    
-    panel.add(scrollPane, BorderLayout.CENTER);
-    
-    return panel;
-}
+    // Dentro de la clase InstagramProject:
+    private JPanel crearPanelNotificacionesContent() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_COLOR);
+
+        JLabel title = new JLabel("🔔 Notificaciones (Menciones)", SwingConstants.CENTER);
+        title.setFont(new Font("SansSerif", Font.BOLD, 24));
+        title.setForeground(TEXT_COLOR);
+        title.setBorder(new EmptyBorder(15, 0, 15, 0));
+        panel.add(title, BorderLayout.NORTH);
+
+        // Panel central que contendrá la lista de notificaciones (scrollable)
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBackground(BG_COLOR);
+        listPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        listPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
+
+        JScrollPane scrollPane = new JScrollPane(listPanel);
+        scrollPane.setBorder(null);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
 
 // Dentro de la clase InstagramProject:
+    /**
+     * Carga y muestra los posts donde el usuario logueado fue mencionado.
+     */
+    public void loadNotifications() {
 
-/** Carga y muestra los posts donde el usuario logueado fue mencionado. */
-public void loadNotifications() { 
-    
-    // 🚨 Usamos la variable de instancia.
-    if (notificationsListPanel == null || loggedUser == null) return;
-    
-    notificationsListPanel.removeAll();
-    notificationsListPanel.revalidate();
-    notificationsListPanel.repaint();
-    
-    String myUsername = loggedUser.getUsername();
-    
-    // 1. Llama a la lógica del backend
-    List<Post> mentions = userManager.findMentions(myUsername);
-    
-    if (mentions.isEmpty()) {
-        JLabel emptyMsg = new JLabel("No tienes menciones recientes (@" + myUsername + ").", SwingConstants.CENTER);
-        emptyMsg.setForeground(Color.GRAY);
-        emptyMsg.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        emptyMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 🚨 Usamos la variable de instancia:
-        notificationsListPanel.add(Box.createVerticalStrut(50));
-        notificationsListPanel.add(emptyMsg);
-    } else {
-        // 2. Muestra cada post de mención
-        for (Post post : mentions) {
-            JPanel mentionItem = createMentionItem(post);
-            mentionItem.setAlignmentX(Component.CENTER_ALIGNMENT);
-            
-            // 🚨 Usamos la variable de instancia:
-            notificationsListPanel.add(mentionItem);
-            notificationsListPanel.add(Box.createVerticalStrut(10));
+        // 🚨 Usamos la variable de instancia.
+        if (notificationsListPanel == null || loggedUser == null) {
+            return;
         }
+
+        notificationsListPanel.removeAll();
+        notificationsListPanel.revalidate();
+        notificationsListPanel.repaint();
+
+        String myUsername = loggedUser.getUsername();
+
+        // 1. Llama a la lógica del backend
+        List<Post> mentions = userManager.findMentions(myUsername);
+
+        if (mentions.isEmpty()) {
+            JLabel emptyMsg = new JLabel("No tienes menciones recientes (@" + myUsername + ").", SwingConstants.CENTER);
+            emptyMsg.setForeground(Color.GRAY);
+            emptyMsg.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            emptyMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // 🚨 Usamos la variable de instancia:
+            notificationsListPanel.add(Box.createVerticalStrut(50));
+            notificationsListPanel.add(emptyMsg);
+        } else {
+            // 2. Muestra cada post de mención
+            for (Post post : mentions) {
+                JPanel mentionItem = createMentionItem(post);
+                mentionItem.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // 🚨 Usamos la variable de instancia:
+                notificationsListPanel.add(mentionItem);
+                notificationsListPanel.add(Box.createVerticalStrut(10));
+            }
+        }
+
+        // 🚨 Usamos la variable de instancia:
+        notificationsListPanel.revalidate();
+        notificationsListPanel.repaint();
     }
-    
-    // 🚨 Usamos la variable de instancia:
-    notificationsListPanel.revalidate();
-    notificationsListPanel.repaint();
-}
 
-/** Crea el componente visual para una notificación de mención. */
-private JPanel createMentionItem(Post post) {
-    JPanel item = new JPanel(new BorderLayout(10, 5));
-    item.setBackground(POST_BG);
-    item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
-    item.setMaximumSize(new Dimension(500, 80)); 
-    
-    String author = post.getAuthorUsername();
-    
-    // Texto de la notificación
-    JLabel lblText = new JLabel("<html><b>@" + author + "</b> te mencionó en una publicación: <i>" 
-                               + post.getCaption().substring(0, Math.min(post.getCaption().length(), 50)) 
-                               + (post.getCaption().length() > 50 ? "..." : "") + "</i></html>");
-    lblText.setForeground(TEXT_COLOR);
-    lblText.setBorder(new EmptyBorder(10, 10, 10, 10));
-    item.add(lblText, BorderLayout.CENTER);
-    
-    // Imagen miniatura del post (ícono)
-    JLabel lblImage = new JLabel(cargarImagenCuadrada(post.getImagePath(), 60));
-    lblImage.setBorder(new EmptyBorder(5, 5, 5, 10));
-    item.add(lblImage, BorderLayout.EAST);
-    
-    return item;
-}
-
+    /**
+     * Crea el componente visual para una notificación de mención.
+     */
+    private JPanel createMentionItem(Post post) {
+        JPanel item = new JPanel(new BorderLayout(10, 5));
+        item.setBackground(POST_BG);
+        item.setBorder(new LineBorder(BORDER_COLOR, 1, true));
+        item.setMaximumSize(new Dimension(500, 80));
+        String author = post.getAuthorUsername();
+        JLabel lblText = new JLabel("<html><b>@" + author + "</b> te mencionó en una publicación: <i>"
+                + post.getCaption().substring(0, Math.min(post.getCaption().length(), 50))
+                + (post.getCaption().length() > 50 ? "..." : "") + "</i></html>");
+        lblText.setForeground(TEXT_COLOR);
+        lblText.setBorder(new EmptyBorder(10, 10, 10, 10));
+        item.add(lblText, BorderLayout.CENTER);
+        JLabel lblImage = new JLabel(cargarImagenCuadrada(post.getImagePath(), 60));
+        lblImage.setBorder(new EmptyBorder(5, 5, 5, 10));
+        item.add(lblImage, BorderLayout.EAST);
+        return item;
+    }
 
 }
